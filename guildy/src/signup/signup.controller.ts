@@ -38,10 +38,11 @@ export class SignupController {
   }
   @Post('find')
   async findSign(
-    @Body() Body: findSignupDto
+    @Body('raidId'
+    ) raidId : number
   ){
     
-    return await this.signupService.findSignup(Body.signupId)
+    return await this.signupService.findSignup(raidId)
 }
 
 @Post('update/status')

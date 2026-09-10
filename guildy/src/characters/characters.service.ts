@@ -368,6 +368,16 @@ export class CharactersService {
     return user
 
   }
+  async findGuildMembers(guildId: string) {
+  return await this.db.guild.findUnique({
+    where: {
+      discordGuildId: guildId,
+    },
+    include: {
+      member : {include : {chars : true,}}
+    },
+  });
+}
 }
 
 // 1. funkcija Register  registruje  i potrebno je provjeriti da li je kreiran user > guild member , ako nije kreirati , provjeriti name od charactera da li posotji ako da baciti error ako ne uspjesno kreirati charactera .

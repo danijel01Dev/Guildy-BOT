@@ -32,8 +32,51 @@ import ProtWarr from './assets/icons/warrior_prot.png'
 import Hamburger from './assets/hambruger.png'
 
 import './App.css'
+import { useEffect, useState } from 'react'
+import axios from 'axios'
 
+const SPEC_LABELS: Record<Spec, string> = {
+  PROT_PALADIN: 'Protection Paladin',
+  PROT_WARRIOR: 'Protection Warrior',
+  BEAR: 'Bear Druid',
 
+  HOLY_PALADIN: 'Holy Paladin',
+  RETRI_PALADIN: 'Retribution Paladin',
+  HOLY_PRIEST: 'Holy Priest',
+  SHADOW_PRIEST: 'Shadow Priest',
+  DISC_PRIEST: 'Discipline Priest',
+
+  BLOOD_DK: 'Blood DK',
+  FROST_DK: 'Frost DK',
+  UNHOLY_DK: 'Unholy DK',
+
+  BM_HUNTER: 'Beast Mastery Hunter',
+  MM_HUNTER: 'Marksmanship Hunter',
+  SURV_HUNTER: 'Survival Hunter',
+
+  FROST_MAGE: 'Frost Mage',
+  FIRE_MAGE: 'Fire Mage',
+  ARCANE_MAGE: 'Arcane Mage',
+
+  FERAL_DRUID: 'Feral Druid',
+  BALANCE_DRUID: 'Balance Druid',
+  RESTO_DRUID: 'Restoration Druid',
+
+  RESTO_SHAMAN: 'Restoration Shaman',
+  ENHA_SHAMAN: 'Enhancement Shaman',
+  ELE_SHAMAN: 'Elemental Shaman',
+
+  COMBAT_ROGUE: 'Combat Rogue',
+  ASSASSIN_ROGUE: 'Assassination Rogue',
+  SUB_ROGUE: 'Subtlety Rogue',
+
+  FURY_WARRIOR: 'Fury Warrior',
+  ARMS_WARRIOR: 'Arms Warrior',
+
+  DEMO_WARLOCK: 'Demonology Warlock',
+  AFFLI_WARLOCK: 'Affliction Warlock',
+  DESTRO_WARLOCK: 'Destruction Warlock',
+};
  export type Spec = 
   | "PROT_PALADIN"
   | "PROT_WARRIOR"
@@ -122,13 +165,27 @@ const SPEC_EMOJIS: Record<Spec, string> = {
 
 
 
+    //characters/guildMembers
 
 
 
+function GuildMembers({selectedGuild}){
+  const [guildMembers , setGuildMembers] = useState([])
 
-function GuildMembers({guild}){
- 
- console.log(guild)
+  async function getGuildMembers(guildId : string) {
+     const  response = await axios.post('http://localhost:3060/characters/guild-members' , {
+      body : guildId
+     },{
+      withCredentials : true,
+     })
+     setGuildMembers(response.data.member)
+  }
+  useEffect(()=> {   if (!selectedGuild) return;
+
+  getGuildMembers(selectedGuild);}, [selectedGuild])
+
+  
+   
 
   return ( 
     <>
@@ -144,104 +201,37 @@ function GuildMembers({guild}){
      </div>
     <div className='flex items-start flex-1 flex-col  lg:flex-row  gap-4 justify-base  h-screen  w-full  '>
     
-       <Content5 />
+       <Content5 guildMembers={guildMembers} />
       
        
 
     </div>
      </div>
   </>)}
-  function Content5(){
+  function Content5({guildMembers}){
+
     return (
        <div className='grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 2xl:grid-cols-1  gap-5  w-full  p-3 items-start '>
+       {guildMembers.map( x=>  {
+           const main = x.chars.filter(x => x.isMain !== false )
+           const alt = x.chars.filter(x=> x.isMain !== true ? x.spec : '')
+           const mainSpec = main.map(x=> x.spec)
+        
+       return  (
        <div className='flex w-full items-center min-h-25 h-auto rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] gap-4'>
           <img src={ILogo} alt='Logo' className='w-0  sm:w-15 sm:h-15 sm:ml-5 ' />
                           <div className='grid  grid-cols-5 sm:grid-cols-5 w-full gap-3 '>
-                         <p className='flex justify-center text-white text-sm lg:text-xl items-center my-1'>Dadix</p>
-                         <p className='flex justify-center text-white items-center text-sm lg:text-xl  m-1'>Warrior</p>
-                         <div className='flex my-3 justify-center flex-row sm:flex-row items-center gap-3 text-white text-center'> <img src={SPEC_EMOJIS['ARMS_WARRIOR']} className=' w-6 lg:w-8' />Main</div>
-                         <div className='flex items-center justify-content text-white flex-col lg:flex-row gap-1 p-1'>Alt <img src={SPEC_EMOJIS['BALANCE_DRUID']} className='w-8'     /> <img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /> <img src={SPEC_EMOJIS['DEMO_WARLOCK']} className='w-8'     /></div>
-                         <p className='flex justify-center text-center text-white text-sm lg:text-xl items-center'> Guild Master</p>
+                         <p className='flex justify-center text-white text-sm lg:text-xl items-center my-1'>{x.slug}</p>
+                         <p className='flex justify-center text-white items-center text-sm lg:text-xl  m-1'>{SPEC_LABELS[mainSpec]}</p>
+                         <div className='flex my-3 justify-center flex-row sm:flex-row items-center gap-3 text-white text-center'> <img src={SPEC_EMOJIS[mainSpec]} className=' w-6 lg:w-8' />Main</div>
+                         <div className='flex items-center justify-content text-white flex-col lg:flex-row gap-2 p-1'>Alt {alt.map(x=>  <img src={SPEC_EMOJIS[x.spec]} className='w-8'     />)} </div>
+                         <p className='flex justify-center text-center text-white text-sm lg:text-xl items-center'> {x.rank}</p>
                  
                           </div>
-
-       </div> 
-        <div className='flex w-full items-center min-h-25 h-auto rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] gap-4'>
-          <img src={ILogo} alt='Logo' className='w-0  sm:w-15 sm:h-15 sm:ml-5 ' />
-                          <div className='grid  grid-cols-5 sm:grid-cols-5 w-full gap-2 '>
-                         <p className='flex justify-center text-white text-sm lg:text-xl items-center my-1'>Dadix</p>
-                         <p className='flex justify-center text-white items-center text-sm lg:text-xl  m-1'>Warrior</p>
-                         <div className='flex my-3 justify-center flex-row sm:flex-row items-center gap-3 text-white text-center'> <img src={SPEC_EMOJIS['ARMS_WARRIOR']} className=' w-6 lg:w-8' />Main</div>
-                         <div className='grid  grid-cols-2 gap-1 lg:grid-cols-5 items-center justify-content text-white flex-col lg:flex-row  p-1'>Alt <img src={SPEC_EMOJIS['BALANCE_DRUID']} className='w-8'     /> <img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /> <img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /><img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /><img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /><img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /><img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /><img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /><img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /><img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /><img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /><img src={SPEC_EMOJIS['DEMO_WARLOCK']} className='w-8'     /></div>
-                         <p className='flex justify-center text-center text-white text-sm lg:text-xl items-center'> Guild Master</p>
-                 
-                          </div>
-
-       </div> 
-        <div className='flex w-full items-center min-h-25 h-auto rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] gap-4'>
-          <img src={ILogo} alt='Logo' className='w-0  sm:w-15 sm:h-15 sm:ml-5 ' />
-                          <div className='grid  grid-cols-5 sm:grid-cols-5 w-full gap-3 '>
-                         <p className='flex justify-center text-white text-sm lg:text-xl items-center my-1'>Dadix</p>
-                         <p className='flex justify-center text-white items-center text-sm lg:text-xl  m-1'>Warrior</p>
-                         <div className='flex my-3 justify-center flex-row sm:flex-row items-center gap-3 text-white text-center'> <img src={SPEC_EMOJIS['ARMS_WARRIOR']} className=' w-6 lg:w-8' />Main</div>
-                         <div className='flex items-center justify-content text-white flex-col lg:flex-row gap-1 p-1'>Alt <img src={SPEC_EMOJIS['BALANCE_DRUID']} className='w-8'     /> <img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /> <img src={SPEC_EMOJIS['DEMO_WARLOCK']} className='w-8'     /></div>
-                         <p className='flex justify-center text-center text-white text-sm lg:text-xl items-center'> Guild Master</p>
-                 
-                          </div>
-
-       </div> 
-        <div className='flex w-full items-center min-h-25 h-auto rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] gap-4'>
-          <img src={ILogo} alt='Logo' className='w-0  sm:w-15 sm:h-15 sm:ml-5 ' />
-                          <div className='grid  grid-cols-5 sm:grid-cols-5 w-full gap-3 '>
-                         <p className='flex justify-center text-white text-sm lg:text-xl items-center my-1'>Dadix</p>
-                         <p className='flex justify-center text-white items-center text-sm lg:text-xl  m-1'>Warrior</p>
-                         <div className='flex my-3 justify-center flex-row sm:flex-row items-center gap-3 text-white text-center'> <img src={SPEC_EMOJIS['ARMS_WARRIOR']} className=' w-6 lg:w-8' />Main</div>
-                         <div className='flex items-center justify-content text-white flex-col lg:flex-row gap-1 p-1'>Alt <img src={SPEC_EMOJIS['BALANCE_DRUID']} className='w-8'     /> <img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /> <img src={SPEC_EMOJIS['DEMO_WARLOCK']} className='w-8'     /></div>
-                         <p className='flex justify-center text-center text-white text-sm lg:text-xl items-center'> Guild Master</p>
-                 
-                          </div>
-
-       </div> 
-        <div className='flex w-full items-center min-h-25 h-auto rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] gap-4'>
-          <img src={ILogo} alt='Logo' className='w-0  sm:w-15 sm:h-15 sm:ml-5 ' />
-                          <div className='grid  grid-cols-5 sm:grid-cols-5 w-full gap-3 '>
-                         <p className='flex justify-center text-white text-sm lg:text-xl items-center my-1'>Dadix</p>
-                         <p className='flex justify-center text-white items-center text-sm lg:text-xl  m-1'>Warrior</p>
-                         <div className='flex my-3 justify-center flex-row sm:flex-row items-center gap-3 text-white text-center'> <img src={SPEC_EMOJIS['ARMS_WARRIOR']} className=' w-6 lg:w-8' />Main</div>
-                         <div className='flex items-center justify-content text-white flex-col lg:flex-row gap-1 p-1'>Alt <img src={SPEC_EMOJIS['BALANCE_DRUID']} className='w-8'     /> <img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /> <img src={SPEC_EMOJIS['DEMO_WARLOCK']} className='w-8'     /></div>
-                         <p className='flex justify-center text-center text-white text-sm lg:text-xl items-center'> Guild Master</p>
-                 
-                          </div>
-
-       </div> 
-        <div className='flex w-full items-center min-h-25 h-auto rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] gap-4'>
-          <img src={ILogo} alt='Logo' className='w-0  sm:w-15 sm:h-15 sm:ml-5 ' />
-                          <div className='grid  grid-cols-5 sm:grid-cols-5 w-full gap-3 '>
-                         <p className='flex justify-center text-white text-sm lg:text-xl items-center my-1'>Dadix</p>
-                         <p className='flex justify-center text-white items-center text-sm lg:text-xl  m-1'>Warrior</p>
-                         <div className='flex my-3 justify-center flex-row sm:flex-row items-center gap-3 text-white text-center'> <img src={SPEC_EMOJIS['ARMS_WARRIOR']} className=' w-6 lg:w-8' />Main</div>
-                         <div className='flex items-center justify-content text-white flex-col lg:flex-row gap-1 p-1'>Alt <img src={SPEC_EMOJIS['BALANCE_DRUID']} className='w-8'     /> <img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /> <img src={SPEC_EMOJIS['DEMO_WARLOCK']} className='w-8'     /></div>
-                         <p className='flex justify-center text-center text-white text-sm lg:text-xl items-center'> Guild Master</p>
-                 
-                          </div>
-
-       </div> 
-        <div className='flex w-full items-center min-h-25 h-auto rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] gap-4'>
-          <img src={ILogo} alt='Logo' className='w-0  sm:w-15 sm:h-15 sm:ml-5 ' />
-                          <div className='grid  grid-cols-5 sm:grid-cols-5 w-full gap-3 '>
-                         <p className='flex justify-center text-white text-sm lg:text-xl items-center my-1'>Dadix</p>
-                         <p className='flex justify-center text-white items-center text-sm lg:text-xl  m-1'>Warrior</p>
-                         <div className='flex my-3 justify-center flex-row sm:flex-row items-center gap-3 text-white text-center'> <img src={SPEC_EMOJIS['ARMS_WARRIOR']} className=' w-6 lg:w-8' />Main</div>
-                         <div className='flex items-center justify-content text-white flex-col lg:flex-row gap-1 p-1'>Alt <img src={SPEC_EMOJIS['BALANCE_DRUID']} className='w-8'     /> <img src={SPEC_EMOJIS['BLOOD_DK']} className='w-8'     /> <img src={SPEC_EMOJIS['DEMO_WARLOCK']} className='w-8'     /></div>
-                         <p className='flex justify-center text-center text-white text-sm lg:text-xl items-center'> Guild Master</p>
-                 
-                          </div>
-
-       </div> 
-       </div>
-
-    )
-
+       
+       </div> )})
+  }</div>)
+ 
   }
 
 

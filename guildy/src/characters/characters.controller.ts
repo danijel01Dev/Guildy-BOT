@@ -94,4 +94,11 @@ async getGuilds (
 ){
   return await this.charactersService.getGuilds(req.user.discordId)
 }
+
+@Post('guild-members')
+async findGuildMem(
+  @Body('body') guildId: string,
+) {
+  return await this.charactersService.findGuildMembers(guildId);
+}
 }

@@ -43,7 +43,57 @@ import Bleed from './assets/raid-buffs/bleed.jpg'
 import FearieFire from './assets/raid-buffs/feari-fire.jpg'
 import Hero from './assets/raid-buffs/hero.jpg'
 import './App.css'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
+import axios from 'axios'
 
+ const SPEC_FIND: Record<Spec, "TANK" | "HEAL" | "DPS"> = {
+   // TANK
+   PROT_PALADIN: "TANK",
+   PROT_WARRIOR: "TANK",
+   BEAR: "TANK",
+ 
+   // HEAL
+   HOLY_PALADIN: "HEAL",
+   HOLY_PRIEST: "HEAL",
+   DISC_PRIEST: "HEAL",
+   RESTO_DRUID: "HEAL",
+   RESTO_SHAMAN: "HEAL",
+ 
+   // DPS
+   RETRI_PALADIN: "DPS",
+ 
+   BLOOD_DK: "TANK",
+   FROST_DK: "DPS",
+   UNHOLY_DK: "DPS",
+ 
+   BM_HUNTER: "DPS",
+   MM_HUNTER: "DPS",
+   SURV_HUNTER: "DPS",
+ 
+   FROST_MAGE: "DPS",
+   FIRE_MAGE: "DPS",
+   ARCANE_MAGE: "DPS",
+ 
+   FERAL_DRUID: "DPS",
+   BALANCE_DRUID: "DPS",
+ 
+   ENHA_SHAMAN: "DPS",
+   ELE_SHAMAN: "DPS",
+ 
+   COMBAT_ROGUE: "DPS",
+   ASSASSIN_ROGUE: "DPS",
+   SUB_ROGUE: "DPS",
+ 
+   FURY_WARRIOR: "DPS",
+   ARMS_WARRIOR: "DPS",
+ 
+   SHADOW_PRIEST: "DPS",
+ 
+   DEMO_WARLOCK: "DPS",
+   AFFLI_WARLOCK: "DPS",
+   DESTRO_WARLOCK: "DPS",
+ };
 
  export type Spec = 
   | "PROT_PALADIN"
@@ -78,6 +128,48 @@ import './App.css'
   |"AFFLI_WARLOCK"
   |"DESTRO_WARLOCK"
 
+  const SPEC_LABELS: Record<Spec, string> = {
+    PROT_PALADIN: 'Protection Paladin',
+    PROT_WARRIOR: 'Protection Warrior',
+    BEAR: 'Bear Druid',
+  
+    HOLY_PALADIN: 'Holy Paladin',
+    RETRI_PALADIN: 'Retribution Paladin',
+    HOLY_PRIEST: 'Holy Priest',
+    SHADOW_PRIEST: 'Shadow Priest',
+    DISC_PRIEST: 'Discipline Priest',
+  
+    BLOOD_DK: 'Blood DK',
+    FROST_DK: 'Frost DK',
+    UNHOLY_DK: 'Unholy DK',
+  
+    BM_HUNTER: 'Beast Mastery Hunter',
+    MM_HUNTER: 'Marksmanship Hunter',
+    SURV_HUNTER: 'Survival Hunter',
+  
+    FROST_MAGE: 'Frost Mage',
+    FIRE_MAGE: 'Fire Mage',
+    ARCANE_MAGE: 'Arcane Mage',
+  
+    FERAL_DRUID: 'Feral Druid',
+    BALANCE_DRUID: 'Balance Druid',
+    RESTO_DRUID: 'Restoration Druid',
+  
+    RESTO_SHAMAN: 'Restoration Shaman',
+    ENHA_SHAMAN: 'Enhancement Shaman',
+    ELE_SHAMAN: 'Elemental Shaman',
+  
+    COMBAT_ROGUE: 'Combat Rogue',
+    ASSASSIN_ROGUE: 'Assassination Rogue',
+    SUB_ROGUE: 'Subtlety Rogue',
+  
+    FURY_WARRIOR: 'Fury Warrior',
+    ARMS_WARRIOR: 'Arms Warrior',
+  
+    DEMO_WARLOCK: 'Demonology Warlock',
+    AFFLI_WARLOCK: 'Affliction Warlock',
+    DESTRO_WARLOCK: 'Destruction Warlock',
+  };
 const SPEC_EMOJIS: Record<Spec, string> = {
   PROT_PALADIN: PaladinP,
   PROT_WARRIOR: ProtWarr,
@@ -120,7 +212,7 @@ const SPEC_EMOJIS: Record<Spec, string> = {
   AFFLI_WARLOCK: WarlockA,
   DESTRO_WARLOCK: WarlockDest,
 };
-const icons = Object.values(SPEC_EMOJIS)
+
 const random = Math.floor(Math.random() *  31)
 
 
@@ -129,6 +221,20 @@ const random = Math.floor(Math.random() *  31)
 
 
  function Composition(){
+  const [ signedUp , setSignedUp ] = useState([])
+  const [signup , setSignup] = useState([])
+ const {raidId } = useParams()
+  async function getSignups() {
+    const response = await axios.post('http://localhost:3060/signup/find', {
+       raidId  : Number(raidId)
+    }, {
+      withCredentials: true,
+    })
+    console.log(response.data)
+    setSignup(response.data.playerSignups)
+ }
+ useEffect( ()=> { getSignups()}, [raidId])
+  console.log(raidId)
   return ( 
     <>
     
@@ -165,14 +271,15 @@ const random = Math.floor(Math.random() *  31)
      </div>
     <div className='flex items-center  flex-col  xl:flex-row  gap-4  justify-center lg:justify-evenly   w-full h-auto '>
     
-       <Signup />
+       <Signup  signup={signup}
+       signedUp={signedUp}/>
        
 
     </div>
      </div>
   </>)
 }
-function Signup(){
+function Signup({signup, signedUp}){
   return (
     
     <div className='grid grid-cols-1 text-white w-full h-auto p-3 m-2 justify-start items-start '> 
@@ -195,80 +302,16 @@ function Signup(){
    
   
     <div className='grid grid-cols-2 lg:grid-cols-5 p-4 gap-3 w-full'>
-      <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random+19]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
+      { signedUp.map((x) =>  <div key={x.character.id} className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
+        <img  src={SPEC_EMOJIS[x.character.spec]} alt='Combat Rogue' className='w-10 lg:w-10' />
+       <div><p className='text-[#7C3AED]'>{x.character.name}</p>
+           <p>{SPEC_LABELS[x.character.spec]}</p></div>
            <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center    text-xl lg:text-xl text-[#7C3AED] ' >[ - ]</button>
-           </div>
-            <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random+18]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
-           <button  className='flex  w-11 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center  border border-whit  text-2xl lg:text-4xl text-[#7C3AED] ' >-</button>
-           </div>
-           <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random+19]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
-           <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center  border border-whit  text-2xl lg:text-4xl text-[#7C3AED] ' >-</button>
-           </div>
-           <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random+17]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
-           <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center  border border-whit  text-2xl lg:text-4xl text-[#7C3AED] ' >-</button>
-           </div>
-           <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random+16]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
-           <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center  border border-whit  text-2xl lg:text-4xl text-[#7C3AED] ' >-</button>
-           </div>
-           <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random -1]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
-           <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center  border border-whit  text-2xl lg:text-4xl text-[#7C3AED] ' >-</button>
-           </div>
-           <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random +15]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
-           <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center  border border-whit  text-2xl lg:text-4xl text-[#7C3AED] ' >-</button>
-           </div>
-           <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random +14]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
-           <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center  border border-whit  text-2xl lg:text-4xl text-[#7C3AED] ' >-</button>
-           </div>
-           <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random+ 12]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
-           <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center  border border-whit  text-2xl lg:text-4xl text-[#7C3AED] ' >-</button>
-           </div>
-           <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random +10]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
-           <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center  border border-whit  text-2xl lg:text-4xl text-[#7C3AED] ' >-</button>
-           </div>
-           <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random +3 ]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
-           <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center  border border-whit  text-2xl lg:text-4xl text-[#7C3AED] ' >-</button>
-           </div>
-           <div className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={icons[random + 2]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>Dadix</p>
-           <p>Combat </p></div>
-           <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center  border border-whit  text-2xl lg:text-4xl text-[#7C3AED] ' >-</button>
+           </div>)}
+          
            </div>
 
-    </div>
+    
    <div className='flex w-full justify-center items-center'> <button className='flex flex-row  
         transition-all
         duration-200
@@ -297,61 +340,21 @@ function Signup(){
           <option> Dps</option>
         </select>
       </div>
-    <div className='grid  grid-cols-5 border border-[#7C3AED] h-full max-h-15 items-center p-2 '> 
+    <div className='grid grid-cols-2 gap-3'>{ signup.map( x => <div className='grid  grid-cols-5 border border-[#7C3AED] h-full max-h-15 items-center p-2 '> 
     <img src={ILogo}  alt='Logo' className='w-7 lg:w-10'/>
       <div>
-        <p>Dadix</p>
+        <p>{x.character.name}</p>
       </div>
       <div className='flex flex-row justify-center items-center gap-2 '>
-        <img src={SPEC_EMOJIS['DEMO_WARLOCK']} alt='Logo' className='w-7 lg:w-10' /> 
-        <p className='hidden lg:flex '>Demon Warlock</p>
+        <img src={SPEC_EMOJIS[x.character.spec]} alt='Logo' className='w-7 lg:w-10' /> 
+       
       </div>
       <div>
-        <p>DPS</p>
+        <p>{SPEC_FIND[x.character.spec]}</p>
       </div>
       <div><button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-full justify-center items-center    text-2xl lg:text-4xl text-[#7C3AED] ' >+</button> </div>
-      </div>
-      <div className='grid  grid-cols-5 border border-[#7C3AED] h-full max-h-15 items-center p-2'> 
-    <img src={ILogo}  alt='Logo' className='w-7 lg:w-10'/>
-      <div>
-        <p>Dadix</p>
-      </div>
-      <div className='flex flex-row justify-center items-center gap-2 '>
-        <img src={SPEC_EMOJIS['DEMO_WARLOCK']} alt='Logo' className='w-7 lg:w-10' /> 
-        <p className='hidden lg:flex '>Demon Warlock</p>
-      </div>
-      <div>
-        <p>DPS</p>
-      </div>
-      <div><button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-full justify-center items-center    text-2xl lg:text-4xl text-[#7C3AED] ' >+</button> </div>
-      </div>
-      <div className='grid  grid-cols-5 border border-[#7C3AED] h-full max-h-15 items-center p-2'> 
-    <img src={ILogo}  alt='Logo' className='w-7 lg:w-10'/>
-      <div>
-        <p>Dadix</p>
-      </div>
-      <div className='flex flex-row justify-center items-center gap-2 '>
-        <img src={SPEC_EMOJIS['DEMO_WARLOCK']} alt='Logo' className='w-7 lg:w-10' /> 
-        <p className='hidden lg:flex '>Demon Warlock</p>
-      </div>
-      <div>
-        <p>DPS</p>
-      </div>
-      <div><button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-full justify-center items-center    text-2xl lg:text-4xl text-[#7C3AED] ' >+</button> </div>
-      </div>
-      <div className='grid  grid-cols-5 border border-[#7C3AED] h-full max-h-15 items-center p-2'> 
-    <img src={ILogo}  alt='Logo' className='w-7 lg:w-10'/>
-      <div>
-        <p>Dadix</p>
-      </div>
-      <div className='flex flex-row justify-center items-center gap-2 '>
-        <img src={SPEC_EMOJIS['DEMO_WARLOCK']} alt='Logo' className='w-7 lg:w-10' /> 
-        <p className='hidden lg:flex '>Demon Warlock</p>
-      </div>
-      <div>
-        <p>DPS</p>
-      </div>
-      <div><button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-full justify-center items-center    text-2xl lg:text-4xl text-[#7C3AED] ' >+</button> </div>
+      </div>)}
+      
       </div>
       </div>
       

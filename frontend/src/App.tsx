@@ -14,8 +14,8 @@ import axios from 'axios'
 
 function App() {
   const [guild , setGuild ] = useState([]);
-   const [selectedGuild , setSelectedGuild] = useState(guild[0])
- const [guildMembers , setGuildMembers] = useState([])
+   const [selectedGuild , setSelectedGuild] = useState<string>('')
+  
  async  function findGuild () {
      try {
     const response = await axios.get(
@@ -30,11 +30,17 @@ function App() {
     
     const mappedGuild = response.data.guildMembers.map((x) => x.guild)
     setGuild(mappedGuild);
+    
   } catch (error) {
     console.log('Failed to fetch guilds:', error);
   }
   } 
  useEffect(()=> { findGuild() },[])
+ useEffect(() => {
+  if (guild.length > 0 && !selectedGuild) {
+    setSelectedGuild(guild[0].discordGuildId);
+  }
+}, [guild, selectedGuild]);
  
   return (
     <>
@@ -42,13 +48,12 @@ function App() {
       <Routes>
         <Route path='/' element={<Login />} />
         <Route element={<Layout />}>
-    <Route path='/upcoming-raids' element={<UpcomingRaids   guild={guild} setSelectedGuild={setSelectedGuild} setGuildMembers={setGuildMembers}/>} /> 
+    <Route path='/upcoming-raids' element={<UpcomingRaids   selectedGuild={selectedGuild} guild={guild} setSelectedGuild={setSelectedGuild} />} /> 
     <Route path='/chars' element={<CharactersDiv  selectedGuild={selectedGuild}/>} />
-    <Route path='/signups' element={    <MySignups  guildMembers={guildMembers} 
-    guild={guild}/>} />
-    <Route path='/gmembers' element={   <GuilMembers guild={guild}/>} />
+    <Route path='/signups' element={    <MySignups    selectedGuild={selectedGuild}/>} />
+    <Route path='/gmembers' element={   <GuilMembers selectedGuild={selectedGuild}/>} />
     <Route path='/create-raid' element={ <CreateRaid  />} />
-    <Route path='/raid-comp' element={ <Composition  />} />
+    <Route path='/raid-comp/:raidId' element={ <Composition  />} />
     </Route>
     </Routes>
     </div>

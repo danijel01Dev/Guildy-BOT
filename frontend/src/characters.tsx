@@ -35,7 +35,7 @@ import Hamburger from './assets/hambruger.png'
 
 import './App.css'
 import { useEffect, useState } from 'react'
-import type { PlayerSignup } from './upcoming-raids'
+import type { PlayerSignups } from './upcoming-raids'
 import axios from 'axios'
 
 
@@ -160,13 +160,13 @@ const SPEC_EMOJIS: Record<Spec, string> = {
 
 
 
-interface Chars {
+ export interface Chars {
    id : number ,
   name : string ,
   spec : Spec,
   isMain : boolean,
   guildMemberId : number ,
-  playerSignups : PlayerSignup[],
+  playerSignups : PlayerSignups[],
 
    
 }
@@ -205,7 +205,7 @@ async   function getChars (){
         hover:border-[#8B5CF6]
         hover:-translate-y-0.5
         hover:shadow-md
-        cursor-pointer lg:ml-2 w-full md:w-40 items-center bg-[#2B2350] border border-[#7C3AED] text-[#F5F3FF] rounded-sm h-10 items-center justify-center m-auto' > ADD CHARACTER </button>
+        cursor-pointer lg:ml-2 w-full md:w-40 items-center bg-[#2B2350] border border-[#7C3AED] text-[#F5F3FF] rounded-sm h-10 items-center justify-center m-auto' > FINDß CHARACTER </button>
        </div>
      </div>
     <div className='flex items-center  flex-col  lg:flex-row  gap-4 justify-evenly h-screen  w-full  '>
@@ -220,7 +220,7 @@ async   function getChars (){
 }
 function Content3({chars}){
   return  <div className=' grid grid-cols-1 sm:grid-cols-2 lg:grid [1600px]:grid-cols-3 xxl:grid-cols-3 w-auto lg:justify-center overflow-y-auto gap-6 h-auto lg:flex-col   mb-auto mt-10  flex-col p-4 lg:gap-4'> 
-    {chars.map( (char) => <div key={char.id} className='flex  text-white w-70 lg:w-auto flex-col lg:justify-center items-center p-5  lg:flex-row shadow-[0_0_20px_rgba(255,255,255,0.08)] lg:border lg:border-[#2B2350] rounded-xl  lg:bg-[#10161d] lg:p-3 '>  <img src={Guildy} alt='Guildy' className='w-23 h-23 rounded-2xl ' />  <div className='flex flex-col justify-center lg:p-4 m-2'><h1 
+    {chars.map( (char) => <div key={char.id} className='flex  text-white w-70 lg:w-auto flex-col lg:justify-center items-center p-5  lg:flex-row shadow-[0_0_20px_rgba(255,255,255,0.08)] lg:border lg:border-[#2B2350] rounded-xl   lg:p-3 '>  <img src={Guildy} alt='Guildy' className='w-23 h-23 rounded-2xl ' />  <div className='flex flex-col justify-center lg:p-4 m-2'><h1 
      className='flex  lg:text-2xl justify-center text-[#8B5CF6]'>{char.name}</h1>
      <p >Level 80 {SPEC_LABELS[char.spec]} </p></div> 
      <p className='flex lg:p-4 m-3 xl:justify-center   items-center'><img src={SPEC_EMOJIS[char.spec]} alt='BDK' className='w-10'/></p>

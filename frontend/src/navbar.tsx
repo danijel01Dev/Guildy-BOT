@@ -15,7 +15,7 @@ function Navbar(){
   return (
     <div  className="  flex-col hidden   2xl:flex border-r border-white/10  h-screen p-5 w-auto sm:w-80 "> 
     <div onClick={()=> navigate("/")} className='flex flex-1 justify-center  flex-col lg:flex-row items-center border-b border-white/5 p-5 gap-2 m-3'>
-       <img src={Guildy} alt='Guildy' className='flex w-23  border border-white/10 rounded-4xl ' />
+       <img src={Guildy} alt='Guildy' className='flex w-23   rounded-4xl ' />
       <h1 className='flex flex-col text-[#8B5CF6] text-4xl gap-1'>Guildy <p className='text-[#F5F3FF] text-sm'>Wotlk Raid Signups</p></h1>
      </div>
      <div className='flex flex-col text-white'>

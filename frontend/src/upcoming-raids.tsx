@@ -40,7 +40,7 @@ import  Location from './assets/location.png'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import './App.css'
-import {  useState } from 'react'
+import {  useEffect, useState } from 'react'
 
 
 
@@ -178,12 +178,12 @@ export interface Signup {
  leader :   string ;
  createdAt : string ;
  updatedAt  : string;
- playerSignups : PlayerSignup[]; 
+ playerSignups : PlayerSignups[]; 
  discordMessageId: string ;
  discordChannelId : string ;
 
 }
-export interface PlayerSignup{
+export interface PlayerSignups{
    id : number ;
   createdAt : string;
   updatedAt :string ;
@@ -212,9 +212,9 @@ export interface GuildMember {
 }
 
 
-function UpcomingRaids({guild , setSelectedGuild ,  setGuildMembers }){
+function UpcomingRaids({guild , setSelectedGuild , selectedGuild }){
 const [signups , setSignups] = useState<Signup[]>([])
-
+const [modul , setModul] = useState(false)
  
  const [details , setDetails] = useState<Signup | undefined>(undefined)
  
@@ -230,7 +230,7 @@ const [signups , setSignups] = useState<Signup[]>([])
     withCredentials: true
   }
  )
-   setGuildMembers(response.data.signup)
+   
    setSignups(response.data.signup)
    setDetails(response.data.signup[0])
   }
@@ -244,16 +244,28 @@ async function callSignups(e : string){
     getSignups(e)
   
 }
- 
+ useEffect(() => {
+  if (selectedGuild) {
+    getSignups(selectedGuild);
+  }
+}, [selectedGuild]); 
  function showDetails(id : number): any{
   const mapDetails = signups.find((x) =>  x.id === id)
   
   
   setDetails(mapDetails)
 
+ 
+
  }
   return ( 
     <>
+    {modul && <div className='fixed inset-0 z-40 bg-black/50 '> <div className=' fixed inset-0 z-50 flex  flex-col  gap-4 items-center justify-center text-white lg:w-200 h-160 bg-black/90 m-auto rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350]'><div className='grid grid-cols-1 gap-1  h-[80%] w-[80%] items-center   '> 
+      <div className='flex flex-col  gap-2  text-[#8B5CF6]  text-2xl '> Signup Title * <input className='flex  w-[80% ]  shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2349]  text-white  rounded-xl  p-3  bg-white/20 p-1  ' placeholder='Enter Title'></input></div>
+       <div className=' flex flex-col gap-2 text-[#8B5CF6] text-2xl'>Signup Date * <input className='flex  w-[80% ]  shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2349]   text-white  rounded-xl  p-3  bg-white/20 p-1 '    placeholder='Enter Signup Date' ></input></div>
+      <div className=' flex flex-col gap-2 text-[#8B5CF6] text-2xl '>Signup Leader Name * <input className='flex  w-[80% ]  shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2349]  text-white  rounded-xl  p-3  bg-white/20 p-1 ' placeholder='Enter Leader Name ' ></input></div>
+      <div className=' flex flex-col gap-2 text-[#8B5CF6]  text-2xl '>Signup Note * <input className='flex  w-[80% ]  shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2349] text-white  rounded-xl  p-3  bg-white/20 p-1 ' placeholder='Enter note' ></input></div>
+      </div> <div className='flex justify-evenly w-[50%]'> <button  className='bg-[green]/60 p-3 rounded-xl '>SUBMIT</button> <button className='bg-[red]/40 p-3 rounded-xl'     onClick={() => setModul(false)}> CLOSE </button> </div></div></div>}
     
     <div className='flex items-center flex-col justify-start  w-screen  m-1 gap-6  lg:gap-1  h-screen '>
         <img src={Hamburger} alt='Hamburger' className='w-5 itmes-start 2xl:hidden mr-auto  mt-1 ml-3 fixed top-6 left-2' />
@@ -263,9 +275,9 @@ async function callSignups(e : string){
       <h3 className='font-sans text-[16px] text-[#A1A1AA]'>View and sign up for upcoming raids</h3>
        </div>
        <div className=' flex  flex-col md:flex-row flex-1  justify-center  gap-7 lg:gap-1  '>
-         <select  onChange={(e)=> callSignups(e.target.value)} className=' flex  rounded-sm text-[#A8A39A] border border-[#7C3AED] w-aut' > <option value={''}>Select guild</option> { guild.map((x) => <option key={x.id} value={x.discordGuildId}> Guild :  {x.name}</option>)} </select>
+         <select  value={selectedGuild ?? ''} onChange={(e)=> callSignups(e.target.value)} className=' flex  rounded-sm text-[#A8A39A] border border-[#7C3AED] w-aut' > <option value={''}>Select guild</option> { guild.map((x) => <option key={x.id} value={x.discordGuildId}> Guild :  {x.name}</option>)} </select>
         <input type='text' placeholder='Search raids...'  className='flex basis-2/3  rounded-sm text-[#A8A39A] w-70 border border-[#7C3AED] h-10 justify-center items-center   p-1 ' ></input>
-     <button type='submit'      className='flex flex-row  
+     <button type='submit'   onClick={() => setModul(true)}   className='flex flex-row  
         transition-all
         duration-200
         hover:bg-[#A855F7]
@@ -288,14 +300,14 @@ async function callSignups(e : string){
   </>)
 }
 function Content1({showDetails, signups} : {showDetails :(id: number)=>void , signups: Signup[] , }){
-
+ 
   
 
 
 
   
   return ( 
-  <div className='grid grid-cols-1  h-auto      w-auto lg:w-auto      gap-1'>
+  <div className='grid gird-cols-1  sm:grid-cols-1  h-auto      w-[90%] lg:w-auto      gap-1'>
     { 
      signups.map((sig) => {
     
@@ -311,17 +323,19 @@ const dps  =  sig.playerSignups.filter((x)=> SPEC_FIND[x.character.spec] === "DP
   
 console.log(activePlayers)
 
+
+ 
      
      
      
      
     return (
-     <div key={sig.id} onClick={() => showDetails(sig.id)} className='flex flex-col justify-center  items-center  mx-4 h-auto sm:max-h-85  '>
-   <div className='flex flex-col w-auto sm:flex-row bg-[#10161d] justify-center items-center  p-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] gap-4  '> 
-    <div className='flex '> <img src={ILogo} alt='Raid Logo' className=' hidden lg:block max-w-70 ' ></img> </div>
+     <div key={sig.id} onClick={() => showDetails(sig.id)} className='flex flex-col justify-center  items-center  mx-4  h-auto  w-[90%]  '>
+   <div className='flex flex-col w-[75%] sm:w-auto mx-auto  sm:flex-row  justify-center items-center  p-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2349] gap-4 lg:m-1 '> 
+    <div className='flex '> <img src={ILogo} alt='Raid Logo' className=' hidden lg:block  w-auto md:max-w-70 ' ></img> </div>
     <div className='flex  flex-col lg:flex-col  '>
-    <div className='flex flex-row sm:flex-col w-auto '>
-      <div className='flex  flex-col w-auto lg:flex-row  '><div className='flex basis-2/3 text-1xl flex-col gap-1' ><h1 className='flex lg:text-4xl text-white'> {sig.title}</h1>
+    <div className='flex flex-row sm:flex-col w-auto  '>
+      <div className='flex  flex-col w-auto lg:flex-row   '><div className='flex basis-2/3 text-xl flex-col gap-1' ><h1 className='flex lg:text-4xl text-white'> {sig.title}</h1>
       <div className='flex flex-row text-[#A8A39A] gap-2'><img src={Calendar} alt='Calendar' className='w-5 h-5' />{sig.date} </div>
       <div className='flex flex-row w-full  lg:flex-row text-[#A8A39A] gap-2 lg:gap-1'><img src={Crown} alt='Calendar' className='w-3 h-3' />Raid Leader : <h1 className='text-[#8B5CF6]'>{sig.leader}</h1></div></div>
       <div className='flex  flex-col  '>
@@ -330,7 +344,7 @@ console.log(activePlayers)
       </div>
       </div>
     </div>
-     <div className='flex flex-col lg:flex-row gap-12 text-white p-2 border-t border-white/8  '> 
+     <div className='flex flex-col  lg:flex-row gap-12 text-white p-2 border-t border-white/8  '> 
       <div className='flex flex-col justify-center items-center gap-2'> <img src={TankIcon} alt='Tank'  className=' w-6 lg:w-10'/> Tanks <h3 className='text-[#BA8438] text-sm lg:text-xl'> {tanks.length}</h3></div>
       <div  className='flex flex-col justify-center items-center border-x p-3 border-white/10 gap-2'> <img src={HealIcon} alt='Healer'  className='w-6 lg:w-10'/> Healers <h3 className='text-[#51aa53] text-sm lg:text-xl'>{healers.length}</h3></div>
       <div className='flex flex-col justify-center items-center gap-2'> <img src={DpsIcon} alt='Dps'  className='w-6 lg:w-10'/> Dps <h3 className='text-[#9d2a2a] text-sm lg:text-xl '>{dps.length}</h3></div>
@@ -376,12 +390,12 @@ const absence = details.playerSignups.filter((x)=> x.status === "ABSENCE")
     const navigate = useNavigate()
   return (
     <>
-     <div className='flex flex-col w-70 lg:w-auto lg:flex-col  flex-1  min-h-120  lg:h-screen lg:mx-6 p-1 overflow-y-auto bg-[#10161d]  p-7 lg:p-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] '>
+     <div className='flex flex-col w-70 lg:w-auto lg:flex-col  flex-1  min-h-120  lg:h-screen lg:mx-6 p-1 overflow-y-auto   p-7 lg:p-3 rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] '>
        <div className='flex flex-col lg:flex-row w-full justify-end p-4 gap-10 '>  <button className=' flex 
        flex-1  
        justify-center 
        items-center 
-       bg-[#2B2350]  
+        
        h-10 rounded-sm 
        transition-all
         duration-200
@@ -391,7 +405,7 @@ const absence = details.playerSignups.filter((x)=> x.status === "ABSENCE")
         hover:-translate-y-0.5
         hover:shadow-md
         cursor-pointer
-       border border-[#5B21B6] text-[#FFFFFF] shadow-[0_0_20px_rgba(124,58,237,0.15)]'>Sign Up To This Raid</button><button   onClick={()=> navigate("/raid-comp")}    className='flex 
+       border border-[#5B21B6] text-[#FFFFFF] shadow-[0_0_20px_rgba(124,58,237,0.15)]'>Sign Up To This Raid</button><button   onClick={()=> navigate(`/raid-comp/${details.id}`)}    className='flex 
        transition-all
         duration-200
         hover:bg-[#A855F7]
@@ -399,7 +413,7 @@ const absence = details.playerSignups.filter((x)=> x.status === "ABSENCE")
         hover:text-white
         hover:-translate-y-0.5
         hover:shadow-md
-        cursor-pointer flex-1  justify-center items-center bg-[#2B2350]  h-10 rounded-sm border border-[#5B21B6] text-[#FFFFFF] shadow-[0_0_20px_rgba(124,58,237,0.15)]'> Composition Tool</button></div>
+        cursor-pointer flex-1  justify-center items-center   h-10 rounded-sm border border-[#5B21B6] text-[#FFFFFF] shadow-[0_0_20px_rgba(124,58,237,0.15)]'> Composition Tool</button></div>
         <div className='flex  flex-col text-white gap-1 w-full '>
           <h1 className=' text-xl lg:text-2xl'> {details.title}</h1>
           <div className='flex flex-row text-[#A8A39A] p-1 gap-2'> <img src={Calendar} alt='Calendar' className='w-5 h-8 lg:h-auto' /> {details.date}</div> 
