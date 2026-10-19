@@ -12,9 +12,14 @@ export class JwtAuth extends PassportStrategy(Strategy , 'jwt'){
         super({
             jwtFromRequest : (req) => req.cookies.access_token,
              secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
+             
         })
+        
     }
+   
+
     async  validate (payload : any){
+          
         return payload; 
     }
 }

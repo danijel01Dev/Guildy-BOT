@@ -33,7 +33,8 @@ import Hamburger from './assets/hambruger.png'
 
 import './App.css'
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import api from './api/api'
+import toast from 'react-hot-toast'
 
 const SPEC_LABELS: Record<Spec, string> = {
   PROT_PALADIN: 'Protection Paladin',
@@ -169,10 +170,13 @@ const SPEC_EMOJIS: Record<Spec, string> = {
 
 
 
-function GuildMembers({selectedGuild}){
+function GuildMembers({selectedGuild , hamburger , setHamburger}){
   const [guildMembers , setGuildMembers] = useState([])
-
-  async function getGuildMembers(guildId : string) {
+  const [page , setPage] = useState(1)
+  const [search , setSearch] = useState('')
+  const [newMembers, setNewMembers] = useState([])
+ if(search.length < 1 && newMembers.length > 1){ setNewMembers([])}
+  /*async function getGuildMembers(guildId : string) {
      const  response = await axios.post('http://localhost:3060/characters/guild-members' , {
       body : guildId
      },{
@@ -184,35 +188,80 @@ function GuildMembers({selectedGuild}){
 
   getGuildMembers(selectedGuild);}, [selectedGuild])
 
-  
+  */
+ async function findChar(){
+   try{const response = await api.post('/characters/list',{
+    name : search,
+    guildId : selectedGuild
+   },{
+    withCredentials: true,
+   })
+   setNewMembers(response.data)
+   console.log(response.data)
    
+  }
+  catch(err){
+    console.log(err)
+    toast.error('Invalid GuildMember Name')
+  }
+ }
+   
+ async function membersPagination(){
+    const response = await api.get(`/characters/${selectedGuild}/members`,{
+      params : {page}
+    })
+    console.log(response.data)
+    setGuildMembers(response.data)
+  }
+useEffect(()=> { if (!page) return; 
+  membersPagination()}, [page])
 
   return ( 
     <>
-    <div className='flex items-center flex-col justify-center  w-full  m-1  mt-25  h-full'>
-      <img src={Hamburger} alt='Hamburger' className='w-5 itmes-start 2xl:hidden mr-auto  mt-1 ml-3 fixed top-6 left-2' />
+    <div className='content-enter flex items-center flex-col justify-center  w-full  m-1  mt-25  h-full'>
+     <img  onClick={() => setHamburger(true)} src={Hamburger} alt='Hamburger' className={` ${hamburger && ' w-5 itmes-start 2xl:hidden mr-auto  mt-1 ml-3 fixed top-6 left-2'} w-5 itmes-start 2xl:hidden mr-auto  mt-1 ml-3 fixed top-6 left-2`} />
      <div className="flex  flex-col lg:flex-row  w-full  md:w-full gap-4 h-auto  items-center">
      <div className='flex  flex-col basis-2/3 text-white p-2 m-1  items-start '><h1 className='font-title  text-2xl lg:text-4xl tracking-wider text-[#8B5CF6] uppercase'>GUILD MEMBERS</h1>
       <h3 className='font-sans text-[16px] text-[#A1A1AA]'>View guild members</h3>
        </div>
-        <div className=' flex  flex-col md:flex-row flex-1  justify-base gap-1  '>
+        <div className=' flex  flex-col md:flex-row flex-1  justify-base gap-1  sm:mr-5 '>
         
-        <input type='text' placeholder='Search for character...'  className='flex basis-2/3  rounded-sm text-[#A8A39A]  w-auto xl:w-70 border border-[#7C3AED] h-10 justify-center items-center   p-1 m-auto' ></input></div>
+        <input onChange={(e) => setSearch(e.target.value)} type='text' placeholder='Search for character...'  className='flex basis-2/3  rounded-sm text-[#A8A39A]  w-auto xl:w-70 border border-[#7C3AED] h-10 justify-center items-center   p-1 m-auto' ></input> <button disabled={guildMembers.length < 1 || guildMembers === undefined  }      onClick={() => findChar()} className='  w-auto sm:w-[30%] text-[#7C3AED] border border-[#7C3AED] rounded-sm  p-1'>Submit</button></div>
      </div>
     <div className='flex items-start flex-1 flex-col  lg:flex-row  gap-4 justify-base  h-screen  w-full  '>
     
-       <Content5 guildMembers={guildMembers} />
-      
+       {guildMembers.length < 1 || guildMembers === undefined ?   <div className='flex  flex-col justify-center items-center p-4  bg-white/6 rounded-xl  w-[80%]  mx-auto  text-white basis-2/3 min-h-70  '>  <h1 className='flex text-xl sm:text-3xl text-white/90'>No guild members yet</h1> <h3 className='flex text-[12px] sm:text-[16px] text-white/60'>Your guild roster is empty. Invite your members to join Guildy and start building your roster.</h3> </div>              : <Content5 guildMembers={guildMembers}
+       newMembers={newMembers}
+        search={search}
+        page={page}
+        setPage={setPage}
+     />
+  }
        
 
     </div>
      </div>
   </>)}
-  function Content5({guildMembers}){
-
+  function Content5({guildMembers , newMembers , search , page , setPage}){
+const main = newMembers.filter(x => x.isMain !== false )
+           const alt = newMembers.filter(x=> x.isMain !== true ? x.spec : '')
+           const mainSpec = main?.map(x=> x.spec)
     return (
        <div className='grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 2xl:grid-cols-1  gap-5  w-full  p-3 items-start '>
-       {guildMembers.map( x=>  {
+       {  search.length > 0  && newMembers.length > 0 ? (
+       <div className='flex w-full items-center min-h-25 h-auto rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] gap-4'>
+          <img src={ILogo} alt='Logo' className='w-0  sm:w-15 sm:h-15 sm:ml-5 ' />
+                          <div  key={newMembers[0].id} className='grid  grid-cols-1 sm:grid-cols-5 sm:grid-cols-5 w-full gap-1'>
+                         <p className='flex justify-center text-white text-sm lg:text-xl items-center my-1'>{main.name}</p>
+                         <p className='flex justify-center text-white items-center text-sm lg:text-xl  m-1'>{SPEC_LABELS[mainSpec]}</p>
+                         <div className='flex my-3 justify-center flex-row sm:flex-row items-center gap-3 text-white text-center'> <img src={SPEC_EMOJIS[mainSpec]} className=' w-6 lg:w-8' />Main</div>
+                         <div className='flex  items-center justify-content text-white grid grid-cols-4 sm:grid-cols-5 lg:grid lg:grid-cols-7 gap-2 p-1'>Alt {alt?.map(x=>  <img src={SPEC_EMOJIS[x.spec]} className='w-8'     />)} </div>
+                         <p className='flex justify-center text-center text-white text-sm lg:text-xl items-center'> MEMBER </p>
+                 
+                          </div> : 
+              
+       
+       </div> ) :  guildMembers.map( x=>  {
            const main = x.chars.filter(x => x.isMain !== false )
            const alt = x.chars.filter(x=> x.isMain !== true ? x.spec : '')
            const mainSpec = main.map(x=> x.spec)
@@ -220,17 +269,17 @@ function GuildMembers({selectedGuild}){
        return  (
        <div className='flex w-full items-center min-h-25 h-auto rounded-xl shadow-[0_0_20px_rgba(255,255,255,0.08)] border border-[#2B2350] gap-4'>
           <img src={ILogo} alt='Logo' className='w-0  sm:w-15 sm:h-15 sm:ml-5 ' />
-                          <div className='grid  grid-cols-5 sm:grid-cols-5 w-full gap-3 '>
+                          <div className='grid  grid-cols-1 sm:grid-cols-5 sm:grid-cols-5 w-full gap-1'>
                          <p className='flex justify-center text-white text-sm lg:text-xl items-center my-1'>{x.slug}</p>
                          <p className='flex justify-center text-white items-center text-sm lg:text-xl  m-1'>{SPEC_LABELS[mainSpec]}</p>
                          <div className='flex my-3 justify-center flex-row sm:flex-row items-center gap-3 text-white text-center'> <img src={SPEC_EMOJIS[mainSpec]} className=' w-6 lg:w-8' />Main</div>
-                         <div className='flex items-center justify-content text-white flex-col lg:flex-row gap-2 p-1'>Alt {alt.map(x=>  <img src={SPEC_EMOJIS[x.spec]} className='w-8'     />)} </div>
+                         <div className='flex  items-center justify-content text-white grid grid-cols-4 sm:grid-cols-5 lg:grid lg:grid-cols-7 gap-2 p-1'>Alt {alt.map(x=>  <img src={SPEC_EMOJIS[x.spec]} className='w-8'     />)} </div>
                          <p className='flex justify-center text-center text-white text-sm lg:text-xl items-center'> {x.rank}</p>
                  
-                          </div>
+                          </div> : 
+              
        
-       </div> )})
-  }</div>)
+       </div> )}) } <div className='flex text-white justify-center gap-3 items-center w-auto ' ><button disabled={page < 2} className='flex  border border-white/10 p-3 rounded-xl cursor-pointer  sm:w-[10%] justify-center items-center' onClick={()=> setPage(page - 1)}> Previous </button> <button  disabled={guildMembers.length < 10}      className='flex  justify-center border border-white/10 p-3 rounded-xl cursor-pointer sm:w-[10%] items-center' onClick={()=> setPage(page + 1)}> Next</button></div> </div>)
  
   }
 

@@ -21,7 +21,7 @@ async  verify(name : string ,discordId : string  ) {
         }
      })}
 
-    const payload = {sub : user.id , discordId : user?.discordId  }
+    const payload = {sub : user.id , discordId : user?.discordId , name : user.name }
 
     const access_token = await  this.jwt.signAsync(payload, {secret: this.configService.getOrThrow<string>('JWT_SECRET'), expiresIn : '15m'})
    const refresh_token = await this.jwt.signAsync(payload , { secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET') , expiresIn : '7d'})
@@ -83,13 +83,13 @@ if (!getDiscordApi.ok) {
     
 
     
-    async refreshToken(req: any) {
-        const user = await this.db.user.findUnique({where : {id : req.id }})
+    async refreshToken(req: any , refreshToken : string) {
+        const user = await this.db.user.findUnique({where : {discordId : req.discordId}})
         if(!user){ throw new NotFoundException('invalid user')}
 
-        const verifyTokren = await bcrypt.compare(req.refresh_token , user.refreshToken as string )
+        const verifyTokren = await bcrypt.compare(refreshToken , user.refreshToken as string )
         if(!verifyTokren){ throw new UnauthorizedException('invalid refresh token')}
-     const   payload  = { sub: user.id , discordId : req.discordId}
+     const   payload  = { sub: user.id , discordId : req.discordId , name : user.name }
      const access_token = await  this.jwt.signAsync(payload, {secret: this.configService.getOrThrow<string>('JWT_SECRET'), expiresIn : '15m'})
    const refresh_token = await this.jwt.signAsync(payload , { secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET') , expiresIn : '7d'})
    const hashToken = await bcrypt.hash(refresh_token , 10 )

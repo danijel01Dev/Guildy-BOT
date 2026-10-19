@@ -17,7 +17,15 @@ import { CharactersService } from 'src/characters/characters.service';
 import { deleteChar, findCharName } from './register.Char.Dto';
 import { CreateSignupDto } from './createSignup.dto';
 import { SignupService } from 'src/signup/signup.service';
-
+import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
+import { group } from 'console';
+type SignupAnnouncement = {
+  title: string;
+  date: string;
+  leader: string;
+  channelId: string;
+  roster: [string, string][];
+};
 @Injectable()
 export class AppUpdateService {
   private readonly logger = new Logger(AppUpdateService.name);
@@ -25,8 +33,70 @@ export class AppUpdateService {
     private readonly client: Client,
     private char: CharactersService,
     private signup : SignupService,
+private readonly eventEmitter: EventEmitter2
     
-  ) {}
+  ) {console.log(" discord service constructor")}
+   onModuleInit() {
+    console.log(
+      'signup.created listeners:',
+      this.eventEmitter.listenerCount('signup.created'),
+    );
+  }
+  onApplicationBootstrap() {
+    console.log(
+      'Listeners after bootstrap:',
+      this.eventEmitter.listenerCount('signup.created'),
+    );
+  }
+  ;
+  @OnEvent('signup.created')
+ async handleRosterAnnounce( data : any){
+ const rosterLines = data.roster.length
+  ? data.roster.map(([name, spec]) => {
+      const icon = SPEC_EMOJIS[spec as Spec] ?? '❔';
+      return `${icon} **${name}**`;
+    })
+  : ['*No players signed up yet.*'];
+
+const embed = new EmbedBuilder()
+  .setColor(0x5865f2)
+  .setTitle(`❄️ ${data.title}`)
+  .addFields(
+    {
+      name: '📆 Date',
+      value: String(data.date || 'Not specified'),
+      inline: true,
+    },
+    {
+      name: '👑 Raid Leader',
+      value: String(data.leader || 'Not specified'),
+      inline: true,
+    },
+  );
+
+const chunkSize = 5;
+
+for (let i = 0; i < rosterLines.length; i += chunkSize) {
+  const chunk = rosterLines.slice(i, i + chunkSize);
+const groupNumber = Math.floor(i / chunkSize) + 1;
+  embed.addFields({
+    name: `Group ${groupNumber}`,
+    value: chunk.join('\n'),
+    inline: false,
+  });
+}
+
+embed.setTimestamp();
+
+  const channel = await this.client.channels.fetch(data.channelId);
+
+  if (!(channel instanceof TextChannel)) {
+    this.logger.warn(`Channel ${data.channelId} is not a text channel.`);
+    return;
+  }
+
+  await channel.send({ embeds: [embed] });
+}
 ////
 ///
 ////.   --------- Register Char  /register-char
@@ -356,7 +426,7 @@ catch(err){
       ephemeral : true,
      })
   }
-  console.log(err)
+ 
 }
 }
 
@@ -364,7 +434,7 @@ catch(err){
 public async pickSpec(
   @necord.Context() [interaction]: necord.StringSelectContext,
 ) {
-  const [name, spec] = interaction.values[0].split(':');
+  try{const [name, spec] = interaction.values[0].split(':');
 
   await this.char.updateSpec(
     interaction.user.id,
@@ -378,8 +448,21 @@ public async pickSpec(
   await interaction.update({
     content: `${name} updated successfully.`,
     components: [],
-  });
-};
+  });}
+  catch(err){
+  if(err instanceof NotFoundException){
+    await interaction.reply({
+      content : ' Invalid Char Name',
+      ephemeral : true,
+    })
+  }
+  if(err instanceof ConflictException){
+     await interaction.reply({
+      content : 'Register your char first !',
+      ephemeral : true,
+     })
+  
+    }}}
 
 
 
@@ -999,6 +1082,30 @@ embed.addFields(
 
   return embed;
 }
+
+@necord.On('guildMemberUpdate')
+async onGuildMemberUpdate(
+  @necord.Context() [oldMember , newMember] : necord.ContextOf<'guildMemberUpdate'>,){
+  try{
+     console.log('🔥 EVENT');
+    if(oldMember.roles.cache.equals(newMember.roles.cache)){
+      return
+    }
+const rank = newMember.permissions.has('Administrator')
+    ? 'OFFICER'
+    : 'MEMBER';
+
+    console.log(rank)
+    await this.char.updateRole(newMember.user.id, rank, newMember.guild.id)}
+    catch(err){
+      
+      return "Something went wrong"
+
+    }
+}
+
+
+
 }
 export const CLASS_EMOJIS = {
   PALADIN: '<:paladin:1520908540636827799>',

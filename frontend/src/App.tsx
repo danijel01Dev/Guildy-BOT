@@ -1,6 +1,6 @@
 import Composition from './composition'
-import CreateRaid from './create-raid'
-import CharactersDiv from './characters'
+
+import CharactersDiv, { type Chars } from './characters'
 import MySignups from './mysignups'
 import GuilMembers from './guildMembers'
 import UpcomingRaids from './upcoming-raids'
@@ -9,17 +9,21 @@ import Login from './login'
 import './App.css'
 import Layout from './layout'
 import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { Toaster } from "react-hot-toast"
+import api from './api/api'
 
 
 function App() {
   const [guild , setGuild ] = useState([]);
    const [selectedGuild , setSelectedGuild] = useState<string>('')
-  
+  const [ hamburger , setHamburger] = useState(false)
+  const [chars , setChars] = useState<Chars[]>()
+  const [newChars , setNewChars] = useState<Chars[] | []>([])
+   console.log(chars)
  async  function findGuild () {
      try {
-    const response = await axios.get(
-      'http://localhost:3060/characters/guild',
+    const response = await api.get(
+      '/characters/guild',
       {
         withCredentials: true,
       },
@@ -42,18 +46,21 @@ function App() {
   }
 }, [guild, selectedGuild]);
  
+
+
+
   return (
     <>
+     <Toaster position="top-right" />
     <div className='bg-slate-950  w-full min-h-screen  '>
       <Routes>
         <Route path='/' element={<Login />} />
-        <Route element={<Layout />}>
-    <Route path='/upcoming-raids' element={<UpcomingRaids   selectedGuild={selectedGuild} guild={guild} setSelectedGuild={setSelectedGuild} />} /> 
-    <Route path='/chars' element={<CharactersDiv  selectedGuild={selectedGuild}/>} />
-    <Route path='/signups' element={    <MySignups    selectedGuild={selectedGuild}/>} />
-    <Route path='/gmembers' element={   <GuilMembers selectedGuild={selectedGuild}/>} />
-    <Route path='/create-raid' element={ <CreateRaid  />} />
-    <Route path='/raid-comp/:raidId' element={ <Composition  />} />
+        <Route element={<Layout hamburger={hamburger} setHamburger={setHamburger} setGuild={setGuild} />}>
+    <Route path='/upcoming-raids' element={<UpcomingRaids  hamburger={hamburger}  selectedGuild={selectedGuild} guild={guild} setSelectedGuild={setSelectedGuild}  setHamburger={setHamburger} />} /> 
+    <Route path='/chars' element={<CharactersDiv  selectedGuild={selectedGuild} hamburger={hamburger} setHamburger={setHamburger}  newChars={newChars} setNewChars={setNewChars} chars={chars} setChars={setChars}/>}  />
+    <Route path='/signups' element={    <MySignups    selectedGuild={selectedGuild} hamburger={hamburger} setHamburger={setHamburger}/>}   />
+    <Route path='/gmembers' element={   <GuilMembers selectedGuild={selectedGuild}  hamburger={hamburger} setHamburger={setHamburger} />}  />
+    <Route path='/raid-comp/:raidId' element={ <Composition  hamburger={hamburger} setHamburger={setHamburger} selectedGuild={selectedGuild}  />} />
     </Route>
     </Routes>
     </div>

@@ -45,7 +45,9 @@ import Hero from './assets/raid-buffs/hero.jpg'
 import './App.css'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import axios from 'axios'
+import type { Signup } from './upcoming-raids'
+import api from './api/api'
+import toast from 'react-hot-toast'
 
  const SPEC_FIND: Record<Spec, "TANK" | "HEAL" | "DPS"> = {
    // TANK
@@ -213,33 +215,95 @@ const SPEC_EMOJIS: Record<Spec, string> = {
   DESTRO_WARLOCK: WarlockDest,
 };
 
-const random = Math.floor(Math.random() *  31)
 
 
 
 
 
 
- function Composition(){
+
+ function Composition( { hamburger , setHamburger  , selectedGuild} : { hamburger : any , setHamburger : any, selectedGuild : string}){
   const [ signedUp , setSignedUp ] = useState([])
   const [signup , setSignup] = useState([])
+  const [ wholeSignup , setWholeSignuo] = useState<Signup | null >(null)
+  const [newSignup , setNewSignup] = useState()
+  const [channels , setChannels] = useState([])
+  const [selectedChannel , setSelectedChannel] = useState('')
  const {raidId } = useParams()
   async function getSignups() {
-    const response = await axios.post('http://localhost:3060/signup/find', {
+    const response = await api.post('/signup/find', {
        raidId  : Number(raidId)
     }, {
       withCredentials: true,
     })
-    console.log(response.data)
+    
     setSignup(response.data.playerSignups)
+    setWholeSignuo(response.data)
  }
  useEffect( ()=> { getSignups()}, [raidId])
-  console.log(raidId)
-  return ( 
+  console.log(wholeSignup)
+
+
+  function addSignup(signupObj : any ) {
+    const newSignedUp= [...signedUp, signupObj ]
+    const  newSignup = signup.filter( x=>  x.id !== signupObj.id )
+    setSignedUp(newSignedUp)
+    setSignup( newSignup
+    )
+
+  }
+  function removeSignup(  signupObj : any) {
+    const newSignedUp =  signedUp.filter(x => x.id !== signupObj.id)
+    const  newSignup = [...signup, signupObj]
+    setSignedUp(newSignedUp)
+    setSignup(newSignup)
+  }
+
+ async  function getChannels(){
+    const response = await api.get(`/signup/guilds/${selectedGuild}/channels`,{withCredentials:true})
+
+    console.log(response.data)
+    setChannels(response.data)
+  }
+
+  useEffect(()=> {getChannels()}, [selectedGuild])
+  
+ 
+  
+
+ async  function removeSignupButton(){
+     await  api.post('/signup/delete',{
+      signupId : Number(raidId)
+     },{
+      withCredentials: true,
+     })
+   window.location.href= "/upcoming-raids"
+  }
+  console.log(signup)
+  console.log(wholeSignup)
+  console.log(selectedChannel)
+  console.log(signedUp, " TEST")
+  async function sendRoster(){
+  try{  
+    
+    await api.post('signup/roster',{
+    title : wholeSignup.title,
+    date : wholeSignup.date,
+    leader : wholeSignup.leader,
+    channelId : selectedChannel,
+    roster : signedUp
+  },{withCredentials:true})
+    toast.success("Roster Announced successfully!")}
+  catch(err){
+    console.log(err)
+    toast.error('Failed to Announce roster.')
+  }
+}
+    return ( 
     <>
     
     <div className='flex items-center flex-col justify-start  w-screen  m-1  gap-8 lg:gap-1  h-screen p-3 m-2 '>
-        <img src={Hamburger} alt='Hamburger' className='w-5 itmes-start 2xl:hidden mr-auto  mt-1 ml-3 fixed top-6 left-2' />
+        <img  onClick={() => setHamburger(true)} src={Hamburger} alt='Hamburger' className={` ${hamburger && ' w-5 itmes-start 2xl:hidden mr-auto  mt-1 ml-3 fixed top-6 left-2'} w-5 itmes-start 2xl:hidden mr-auto  mt-1 ml-3 fixed top-6 left-2`} />
         
      <div className="flex  flex-col lg:flex-row  w-auto  md:w-full gap-4 h-auto justify-center items-center lg:my-10  ">
      <div className='flex  flex-col sm:flex-row basis-2/3 text-white p-2 m-1 items-center  lg:items-center  gap-3'><h1 className='font-title  text-xl lg:text-xl tracking-wider text-[#8B5CF6] uppercase'>Icecrown Citadel 25 HC </h1>
@@ -247,17 +311,10 @@ const random = Math.floor(Math.random() *  31)
        </div>
        <div className=' flex  flex-col md:flex-row   justify-center  gap-6 lg:gap-1 w-full m-1 '>
         <div className='flex  text-white gap-2 justify-center items-center m-auto bg-[#2B2350] p-3 rounded-lg'>
-          <p className='flex  w-full'> May 25, 2026 </p>
-          <p> 19:00</p>
+          <p className='flex  w-full'> {wholeSignup?.date} </p>
+          
         </div>
-         <button type='submit'      className='flex flex-row  
-        transition-all
-        duration-200
-        hover:bg-[#A855F7]
-        hover:border-[#8B5CF6]
-        hover:-translate-y-0.5
-        hover:shadow-md
-        cursor-pointer   w-full md:w-40 items-center bg-[#2B2350] border border-[#7C3AED] text-[#F5F3FF] rounded-sm h-10 items-center justify-center ' > Update Signup </button> 
+      
       
         <button type='submit'      className='flex flex-row  
         transition-all
@@ -266,60 +323,97 @@ const random = Math.floor(Math.random() *  31)
         hover:border-[#8B5CF6]
         hover:-translate-y-0.5
         hover:shadow-md
-        cursor-pointer  lg:mr-5  w-full md:w-40 items-center bg-[#2B2350] border border-[#7C3AED] text-[#F5F3FF] rounded-sm h-10 items-center justify-center ' > Delete Signup</button>
+        cursor-pointer  lg:mr-5  w-full md:w-40 items-center bg-[#2B2350] border border-[#7C3AED] text-[#F5F3FF] rounded-sm h-10 items-center justify-center ' onClick={()=> removeSignupButton()} > Cancel Raid </button>
        </div>
      </div>
     <div className='flex items-center  flex-col  xl:flex-row  gap-4  justify-center lg:justify-evenly   w-full h-auto '>
     
        <Signup  signup={signup}
-       signedUp={signedUp}/>
+       channels={channels}
+       newSignup={newSignup}
+       setNewSignup={setNewSignup}
+       signedUp={signedUp}
+       addSignup={addSignup}
+       removeSignup={removeSignup}
+       setSelectedChannel={setSelectedChannel}
+       sendRoster={sendRoster}/>
        
 
     </div>
      </div>
-  </>)
-}
-function Signup({signup, signedUp}){
+  </>)}
+ 
+function Signup({signup, signedUp , addSignup , removeSignup,  newSignup, setNewSignup, channels , setSelectedChannel  , sendRoster}){
+  const [select , setSelect ] = useState([])
+  const [search , setSearch] = useState('')
+ 
+  useEffect( ()=> setSelect(signup ), [signup])
+
+ 
+  
+ 
+  function filterSpec(e : string){
+    
+    
+    const heals = signup.filter(x => SPEC_FIND[x.character.spec] === 'HEAL')
+     const tanks = signup.filter(x => SPEC_FIND[x.character.spec] === 'TANK')
+     const dps = signup.filter(x => SPEC_FIND[x.character.spec] === 'DPS')
+
+     if(e === 'HEAL') { return setSelect(heals)}
+     if(e === 'TANK') { return setSelect(tanks)}
+     if( e === 'DPS'){ return setSelect(dps)}
+     else(setSelect(signup))
+  }
+  async function filterChars(e : string) {
+    setSearch(e)
+    console.log(signup)
+    const filterChars = signup.filter(x=> x.character.name.toLowerCase().includes(e.toLowerCase()))
+    console.log(filterChars)
+    console.log(search)
+    setNewSignup(filterChars)
+  }
+ 
+   
   return (
     
-    <div className='grid grid-cols-1 text-white w-full h-auto p-3 m-2 justify-start items-start '> 
+    <div className='content-enter grid grid-cols-1 text-white w-full h-auto p-3 m-2 justify-start items-start '> 
      <div className='flex justify-center itmes-center '><h1 className='flex justify-center items-center p-4'> Raid Composition</h1></div>
-    <div className='grid grid-cols-6  sm:flex sm:flex-row justify-center gap-2'>
-      <img src={Misery} alt='icon' className='w-7 lg:w-10 rounded-xl' />
-      <img src={Bleed} alt='icon' className='w-7 lg:w-10 rounded-xl' />
-      <img src={Hero} alt='icon' className='w-7 lg:w-10 rounded-xl' />
-      <img src={Rampage} alt='icon' className='w-7 lg:w-10 rounded-xl' />
-      <img src={Spellp} alt='icon' className='w-7 lg:w-10 rounded-xl' />
-      <img src={Moonkin} alt='icon' className='w-7 lg:w-10 rounded-xl' />
-      <img src={Wrath} alt='icon' className='w-7 lg:w-10 rounded-xl' />
-      <img src={Talon} alt='icon' className='w-7 lg:w-10 rounded-xl' />
-      <img src={Trueshot} alt='icon' className='w-7 lg:w-10 rounded-xl' />
-      <img src={Pack} alt='icon' className='w-7 lg:w-10 rounded-xl' />
-      <img src={Haste} alt='icon' className='w-7 lg:w-10 rounded-xl' />
-      <img src={FearieFire} alt='icon' className='w-7 lg:w-10 rounded-xl' />
+    <div className='grid grid-cols-7  sm:flex sm:flex-row justify-center gap-2'>
+     { signedUp.some(x=> SPEC_LABELS[x.character.spec] === 'Shadow Priest')  ? (<img src={Misery} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[green]' /> ) :  (<img src={Misery} alt='icon' className='w-7 lg:w-10 rounded-sm p-1   border  border-[red]'/>)}
+     { signedUp.some(x=> SPEC_LABELS[x.character.spec]  === 'Bear Druid' ||  SPEC_LABELS[x.character.spec]  === 'Feral Druid' ) ? (<img src={Bleed} alt='icon' className='w-7 lg:w-10 rounded-sm border border-[green] p-1 ' />)  : (<img src={Bleed} alt='icon' className='w-7 lg:w-10 rounded-sm border  border-[red] p-1' />) }
+      { signedUp.some(x=> SPEC_LABELS[x.character.spec]  ===  'Restoration Shaman' || SPEC_LABELS[x.character.spec]  === 'Enhancement Shaman' || SPEC_LABELS[x.character.spec]  === 'Elemental Shaman' ) ? (<img src={Hero} alt='icon' className='w-7 lg:w-10 rounded-sm border border-[green] p-1' />) :   (<img src={Hero} alt='icon' className='w-7 lg:w-10 rounded-sm border border-[red] p-1 ' />)}
+      { signedUp.some(x=> SPEC_LABELS[x.character.spec]  ===  'Fury Warrior' ) ? ( <img src={Rampage} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[green]' />) : ( <img src={Rampage} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[red]' />)}
+     { signedUp.some(x=> SPEC_LABELS[x.character.spec]  ===  'Demonology Warlock' || SPEC_LABELS[x.character.spec]  === 'Affliction Warlock' || SPEC_LABELS[x.character.spec]  ===  'Destruction Warlock') ? ( <img src={Spellp} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[green]' /> ) : ( <img src={Spellp} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[red]' /> ) }
+     { signedUp.some(x=> SPEC_LABELS[x.character.spec]  === 'Balance Druid') ?  (<img src={Moonkin} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[green]' /> ) : (<img src={Moonkin} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[red]' /> ) }
+    { signedUp.some(x=> SPEC_LABELS[x.character.spec]  ===  'Elemental Shaman') ? ( <img src={Wrath} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[green]' />) : ( <img src={Wrath} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[red]' />) }
+    { signedUp.some(x=> SPEC_LABELS[x.character.spec]  ===  'Blood DK' || SPEC_LABELS[x.character.spec]  ===  'Frost DK' || SPEC_LABELS[x.character.spec]  ===  'Enhancement Shaman') ? ( <img src={Talon} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[green]' />) :  ( <img src={Talon} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[red]' />)}
+    { signedUp.some(x=> SPEC_LABELS[x.character.spec]  ===  'Marksmanship Hunter') ? (<img src={Trueshot} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[green]' />) : (<img src={Trueshot} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[red]' />)} 
+    { signedUp.some(x=> SPEC_LABELS[x.character.spec]  ===  'Feral Druid') ? ( <img src={Pack} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[green]' />) :  ( <img src={Pack} alt='icon' className='w-7 lg:w-10 rounded-sm p-1 border border-[red]' />) }
+     { signedUp.some(x=> SPEC_LABELS[x.character.spec]  === 'Restoration Shaman' || SPEC_LABELS[x.character.spec]  ===  'Enhancement Shaman' || SPEC_LABELS[x.character.spec]  === 'Elemental Shaman') ?  (<img src={Haste} alt='icon' className='w-7 lg:w-10 rounded-sm p-1  border border-[green]' />) : (<img src={Haste} alt='icon' className='w-7 lg:w-10 rounded-sm  p-1 border border-[red]' />) }
+    { signedUp.some(x=> SPEC_LABELS[x.character.spec]  ===  'Balance Druid' ? ( <img src={FearieFire} alt='icon' className='w-7 lg:w-10 rounded-sm p-1  border border-[green] ' />) :  ( <img src={FearieFire} alt='icon' className='w-7 lg:w-10 rounded-sm p-1  border border-[red] ' />) )}
 
     </div>
    
   
     <div className='grid grid-cols-2 lg:grid-cols-5 p-4 gap-3 w-full'>
-      { signedUp.map((x) =>  <div key={x.character.id} className='flex flex-row justify-center items-center p-2 gap-2 w-full max-h-20 h-auto border border-[#7C3AED]'>
-        <img  src={SPEC_EMOJIS[x.character.spec]} alt='Combat Rogue' className='w-10 lg:w-10' />
-       <div><p className='text-[#7C3AED]'>{x.character.name}</p>
-           <p>{SPEC_LABELS[x.character.spec]}</p></div>
+      { signedUp.map(x =>  <div key={x.character.id} onClick={()=> removeSignup(x)} className='flex flex-row justify-center items-center p-1 gap-1 w-full max-h-20 h-auto border border-[#7C3AED]'>
+        <img  src={SPEC_EMOJIS[x.character.spec]} alt='Combat Rogue' className='w-10 lg:w-8' />
+       <div><p className='text-[#7C3AED] text-xl'>{x.character.name}</p>
+          </div>
            <button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-auto justify-center items-center    text-xl lg:text-xl text-[#7C3AED] ' >[ - ]</button>
            </div>)}
           
            </div>
 
     
-   <div className='flex w-full justify-center items-center'> <button className='flex flex-row  
+   <div className='flex w-full justify-center items-center flex-col sm:flex-row'><select onChange={(e)=> setSelectedChannel(e.target.value)} className='flex w-[60%]  m-5 bg-white/6 sm:p-3 min-h-10  rounded-sm'> <option value=''> Select Channel</option> {channels.map(x=> <option key={x.id} value={x.id}> #{x.name} </option>)}</select> <button className='flex flex-row  
         transition-all
         duration-200
         hover:bg-[#A855F7]
         hover:border-[#8B5CF6]
         hover:-translate-y-0.5
         hover:shadow-md
-        cursor-pointer   w-full md:w-40 items-center bg-[#8B5CF6] border border-[#7C3AED] text-[#F5F3FF] rounded-sm h-10 items-center justify-center ' > Announce</button></div>
+        cursor-pointer   w-full md:w-40 items-center bg-[#8B5CF6] border border-[#7C3AED] text-[#F5F3FF] rounded-sm h-10 items-center justify-center ' onClick={()=> sendRoster()} > Announce</button></div>
 
 
 
@@ -329,18 +423,24 @@ function Signup({signup, signedUp}){
 
     <div className='grid gird-cols-1 h-full p-3 m-2  gap-3'>
       <div className='grid grid-cols-1 lg:grid-cols-4  p-4  bg-[#10161d] shadow-[0_0_20px_rgba(255,255,255,0.08)]  rounded-sm '>
-        <h1 className='flex justify-center items-center'>SIGNED UP PLAYERS  (25)</h1> 
+        <h1 className='flex justify-center items-center'>SIGNED UP PLAYERS  ({signup.lenght})</h1> 
        
         
-         <div> <input type='text' placeholder='Search for character...'  className='flex   rounded-sm text-[#A8A39A]  w-auto xl:w-60 border border-[#7C3AED] h-10 justify-center items-center   p-1 m-auto' ></input></div>
-       <select className='flex   rounded-sm text-[#A8A39A] lg:ml-auto w-auto xl:w-60 border border-[#7C3AED] h-10 justify-center items-center   p-1 ' >
-        <option>All Roles</option>
-          <option>Tanks</option>
-          <option> Healers</option>
-          <option> Dps</option>
+         <div> <input  onChange={(e)=> filterChars(e.target.value)}   type='text' placeholder='Search for character...'  className='flex   rounded-sm text-[#A8A39A]  w-auto xl:w-60 border border-[#7C3AED] h-10 justify-center items-center   p-1 m-auto' ></input></div>
+       <select onChange={(e)=> filterSpec(e.target.value) } className='flex   rounded-sm text-[#A8A39A] lg:ml-auto w-auto xl:w-60 border border-[#7C3AED] h-10 justify-center items-center   p-1 ' >
+        <option >All Roles</option>
+          <option value={'TANK'}>Tanks</option>
+          <option value={'HEAL'}> Healers</option>
+          <option value={'DPS'}> Dps</option>
         </select>
       </div>
-    <div className='grid grid-cols-2 gap-3'>{ signup.map( x => <div className='grid  grid-cols-5 border border-[#7C3AED] h-full max-h-15 items-center p-2 '> 
+    <div className='grid grid-cols-1 sm:grid-cols-1  md:grid-cols-2 lg:grid-cols-3  xl:grid-cols-4 gap-3'>{ search.length > 0 ? newSignup.map( x => {
+
+      const isAlreadySignedUp = signedUp.some(e => e.character.guildMemberId ===  x.character.guildMemberId)
+      
+      return (<div key={x.id} onClick={() => !isAlreadySignedUp && addSignup(x)} className={`grid  grid-cols-5 border border-[#7C3AED] h-full max-h-15 items-center p-2 ${
+    isAlreadySignedUp ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+  } `}> 
     <img src={ILogo}  alt='Logo' className='w-7 lg:w-10'/>
       <div>
         <p>{x.character.name}</p>
@@ -352,10 +452,32 @@ function Signup({signup, signedUp}){
       <div>
         <p>{SPEC_FIND[x.character.spec]}</p>
       </div>
-      <div><button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-full justify-center items-center    text-2xl lg:text-4xl text-[#7C3AED] ' >+</button> </div>
-      </div>)}
+      <div><button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-full justify-center items-center     text-2xl lg:text-4xl text-[#7C3AED] ' >+</button> </div>
+      </div> 
+      )
+}) :  select.map( x => {
+
+      const isAlreadySignedUp = signedUp.some(e => e.character.guildMemberId ===  x.character.guildMemberId)
       
+      return (<div key={x.id} onClick={() => !isAlreadySignedUp && addSignup(x)} className={`grid  grid-cols-5 border border-[#7C3AED] h-full max-h-15 items-center p-2 ${
+    isAlreadySignedUp ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'
+  } `}> 
+    <img src={ILogo}  alt='Logo' className='w-7 lg:w-10'/>
+      <div>
+        <p>{x.character.name}</p>
       </div>
+      <div className='flex flex-row justify-center items-center gap-2 '>
+        <img src={SPEC_EMOJIS[x.character.spec]} alt='Logo' className='w-7 lg:w-10' /> 
+       
+      </div>
+      <div>
+        <p>{SPEC_FIND[x.character.spec]}</p>
+      </div>
+      <div><button  className='flex  w-10 lg:w-11 lg:h-8 rounded-sm h-full justify-center items-center     text-2xl lg:text-4xl text-[#7C3AED] ' >+</button> </div>
+      </div> 
+      )
+})}
+</div> 
       </div>
       
       
@@ -364,3 +486,9 @@ function Signup({signup, signedUp}){
 }
 
 export default Composition
+
+
+
+
+
+

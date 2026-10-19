@@ -2,12 +2,14 @@ import { ConflictException, Injectable, NotFoundException } from '@nestjs/common
 import { CreateSignupDto } from './dto/create-signup.dto';
 import { UpdateSignupDto } from './dto/update-signup.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { connect } from 'node:http2';
+
 import { Status } from 'generated/prisma/enums';
+import { ChannelType, Client } from 'discord.js';
 
 @Injectable()
 export class SignupService {
-  constructor(private db: PrismaService) {}
+  constructor(private readonly client: Client,
+    private db: PrismaService) {}
   async createSignup(dto : CreateSignupDto) {
     
        const findGuild = await this.db.guild.findUnique({where : { discordGuildId : dto.discordGuildId},
@@ -130,12 +132,13 @@ async updatePlayerSignupStatus(
   characterId: number[],
   status : Status,
 ){
+  
   try{
     const updateStatus = await this.db.playerSignup.updateMany({
       where :{
         signupId,
         characterId :{
-          in : characterId,
+          in : characterId ,
         },
         
       },
@@ -154,12 +157,12 @@ async updatePlayerSignupStatus(
 async getSignups(guildId : string){
   const today = new Date();
 
-  console.log(today)
+ 
 
 
 const sevenDaysAgo = new Date(today);
 sevenDaysAgo.setDate(today.getDate() - 7);
-  console.log(guildId)
+ 
 
  const test = await  this.db.guild.findUnique({
     where: {
@@ -187,8 +190,63 @@ sevenDaysAgo.setDate(today.getDate() - 7);
       },
     },
   });
-  console.log(test)
+
   return test
+}
+
+async getGuildChannels(guildId : string) {
+
+  const guild = await this.client.guilds.fetch(guildId);
+  const channels = await guild.channels.fetch();
+
+  return channels
+    .filter(
+      (channel) =>
+        channel &&
+        (
+          channel.type === ChannelType.GuildText ||
+          channel.type === ChannelType.GuildAnnouncement
+        ),
+    )
+    .map((channel) => ({
+      id: channel!.id,
+      name: channel!.name,
+      type: channel!.type,
+    }));
+
+
+
+}
+async removeSignup(signupId: number) {
+  return await this.db.$transaction(async (tx) => {
+    await tx.playerSignup.deleteMany({
+      where: {
+        signupId,
+      },
+    });
+
+    return tx.signup.delete({
+      where: {
+        id: signupId,
+      },
+    });
+  });
+}
+
+async landingPageInfo(){
+const guildMembers = await this.db.guildMember.count();
+if(!guildMembers) { throw new NotFoundException('there is no guild members registered ')}
+const totalSignups = await this.db.signup.count()
+if(!totalSignups) { return new NotFoundException('there is no signup created yet')}
+const guild = await this.db.guild.count()
+if(!guild){ throw new NotFoundException('there is no guild registered yet')}
+const dkp = 20
+ return {
+  guild,
+  totalSignups,
+  guildMembers,
+  dkp
+ }
 }
 
 }

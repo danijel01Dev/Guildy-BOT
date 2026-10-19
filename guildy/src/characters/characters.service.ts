@@ -327,6 +327,45 @@ export class CharactersService {
       throw err 
     }
   }
+  async findCharFam(name: string, guildId: string) {
+    /// flow : Use prisma query and find by name and guildId  > it will look for name in guild that user sent bot interaction
+   try{ const character = await this.db.character.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: 'insensitive',
+        },
+        guildMember: {
+          guild: {
+            discordGuildId: guildId,
+          },
+        },
+      },
+      include: {
+        guildMember: {
+          include: {
+            chars: {
+              orderBy: {
+                isMain: 'desc', // shows main char on top always
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!character) {
+      
+     throw new NotFoundException(
+        `Character "${name}" not found in this guild.`,
+      );
+    }
+   
+    return character.guildMember.chars;}
+    catch(err){
+      throw err 
+    }
+  }
   async findUserCharacters(discordId: string, guildId: string) {
   const guildMember = await this.db.guildMember.findFirst({
     where: {
@@ -354,6 +393,33 @@ export class CharactersService {
 
   return guildMember.chars;
 }
+async getRanks(discordId: string, guildId: string) {
+  const guildMember = await this.db.guildMember.findFirst({
+    where: {
+      user: {
+        discordId,
+      },
+      guild: {
+        discordGuildId: guildId,
+      },
+    },
+    include: {
+      chars: {
+        orderBy: {
+          isMain: 'desc',
+        },
+      },
+    },
+  });
+
+  if (!guildMember) {
+    throw new NotFoundException(
+      'You are not registered in this guild.',
+    );
+  }
+
+  return guildMember;
+}
  async getGuilds(discordId : string) {
     const user = await this.db.user.findUnique({
       where : {discordId},
@@ -364,10 +430,17 @@ export class CharactersService {
       }
     })
     if(!user){throw new NotFoundException('invalid user')}
-     console.log(user)
+     
     return user
 
   }
+
+  //
+  //
+  //
+  //
+  //
+  // ==== Get Guild Members ==== ////
   async findGuildMembers(guildId: string) {
   return await this.db.guild.findUnique({
     where: {
@@ -378,10 +451,54 @@ export class CharactersService {
     },
   });
 }
+//
+//
+//
+//
+//
+//==== User info fro nav Bar ===//
+ async userInformation(discordId : string){
+   return  await this.db.user.findUnique({where : { discordId}})
+ }
+
+ ////== Find Guild Members by Search ====///
+ async findGuildMembersBySearch(guildId : string ,page : number){
+  const limit = 10
+
+  const skip = (Number(page) - 1) * limit
+  const findGuild = await this.db.guild.findUnique({where:{ discordGuildId : guildId}})
+  if(!findGuild){throw  new NotFoundException('invalid guild id')}
+ const test = await this.db.guildMember.findMany({where: {guildId : findGuild.id}, 
+  include:{ chars : true},
+
+ 
+  skip : skip,
+  take : limit,
+  orderBy :{
+    createdAt: 'desc'
+  }
+ })
+ console.log(test)
+ return test
+
+ }
+ async updateRole(id : string , role: any , guildId : string){
+  console.log(role)
+     const findGuild = await this.db.guild.findUnique({where : {discordGuildId : guildId}})
+  if(!findGuild){ throw new NotFoundException("invalid guild")}
+  const findUser = await this.db.user.findUnique({where : {discordId : id}})
+  if(!findUser){ throw new NotFoundException("invalid user")}
+  const findGuildMember = await this.db.guildMember.update({where :
+     {guildId_userId : {guildId : findGuild.id ,
+      userId: findUser.id
+     } }, data : {
+      rank : role
+     }})
+  console.log(findGuildMember)
+    return findGuildMember 
+ }
+
+
 }
 
-// 1. funkcija Register  registruje  i potrebno je provjeriti da li je kreiran user > guild member , ako nije kreirati , provjeriti name od charactera da li posotji ako da baciti error ako ne uspjesno kreirati charactera .
-// 2. funckija  updateSpec  za update speca na characterima ... potrebno je ime charactera i uspjesno ce se update .
-// 3. funckija updateGearScore update gsa  .... implementacija u v2
-// 4. funkcija updateName za update nickname u bazi od chara ... input stari nick i tjt
-// 4. funkcija RemoveChar potrebna provjera  identiteta
+

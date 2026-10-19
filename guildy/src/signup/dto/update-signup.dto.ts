@@ -14,7 +14,7 @@ export class findSignupDto {
 export class updatePlayerStatusDto {
 
   signupId : number;
-  characterId : number;
+  characterId : number[];
   status : Status;
 }
 export class updateSignupMessageDto {

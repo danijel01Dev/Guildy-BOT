@@ -1,4 +1,3 @@
-import axios from 'axios'
 import ILogo from './assets/raidLogo.png'
 import { useEffect, useState } from 'react'
 import Hamburger from './assets/hambruger.png'
@@ -35,6 +34,7 @@ import WarlockDest from './assets/icons/warlock_destru.png'
 import Arms from './assets/icons/warrior_arms.png'
 import Fury from './assets/icons/warrior_fury.png'
 import ProtWarr from './assets/icons/warrior_prot.png'
+import api from './api/api'
 
 
 interface Chars {
@@ -93,14 +93,14 @@ const SPEC_EMOJIS: Record<Spec, string> = {
 
 
 
-const url = 'http://localhost:3060' 
-function MySignups({  selectedGuild }){
+
+function MySignups({  selectedGuild, hamburger , setHamburger }){
    
    const [signups , setSignups] = useState([])
    const [chars , setChars] = useState<Chars[]>([])
   const getSignups = async (guildId : string) => {
  
- const response = await axios.post(`${url}/signup`, {
+ const response = await api.post(`/signup`, {
   
     selectedGuild : guildId,
   },
@@ -118,7 +118,7 @@ function MySignups({  selectedGuild }){
 
 async   function getChars (){
  
-    const response =  await axios.post('http://localhost:3060/characters/by/user',{
+    const response =  await api.post('/characters/by/user',{
       
         discordGuildId : selectedGuild
       },
@@ -131,42 +131,47 @@ async   function getChars (){
     useEffect(()=> {getChars()}, [])
    console.log(chars)
   
-    const filterChars = chars.map(x => x.name)
+   
 
-const filterSignups = signups.filter(signup =>
-  signup.playerSignups.some(playerSignup =>
-    filterChars.includes(playerSignup.character.name)
-  )
-)
      
-     console.log(filterSignups)
+
   
-  return ( 
-    <>
-    <div className='flex items-center flex-col justify-center  w-full  m-1  mt-25  h-full'>
-      <img src={Hamburger} alt='Hamburger' className='w-5 itmes-start 2xl:hidden mr-auto  mt-1 ml-3 fixed top-6 left-2' />
+  return  <>
+    <div className='content-enter flex items-center flex-col justify-center  w-full  m-1  mt-25  h-full'>
+       <img  onClick={() => setHamburger(true)} src={Hamburger} alt='Hamburger' className={` ${hamburger && ' w-5 itmes-start 2xl:hidden mr-auto  mt-1 ml-3 fixed top-6 left-2'} w-5 itmes-start 2xl:hidden mr-auto  mt-1 ml-3 fixed top-6 left-2`} />
      <div className="flex  flex-col lg:flex-row  w-full  md:w-full gap-4 h-auto  items-center">
      <div className='flex  flex-col basis-2/3 text-white p-2 m-1  items-start '><h1 className='font-title  text-2xl lg:text-4xl tracking-wider text-[#8B5CF6] uppercase'>MY SIGNUPS</h1>
       <h3 className='font-sans text-[16px] text-[#A1A1AA]'>View your raid signups</h3>
        </div>
        
      </div>
-    <div className='flex items-start flex-1 flex-col  lg:flex-row  gap-4 justify-base  h-screen  w-full  '>
+   <div className='flex items-start flex-1 flex-col  lg:flex-row  gap-4 justify-base  h-screen  w-full  '>
     
-       <Content4 filterSignups={filterSignups}  filterChars={filterChars}/>
-      
+      { chars.length < 1 || chars === undefined  || signups.length < 1 || signups === undefined  ?      <div className=' flex  flex-col justify-center items-center p-4  bg-white/6 rounded-xl  w-[80%]  mx-auto  text-white basis-2/3 min-h-70 '> <h1 className='text-3xl text-white/90'>No raid signups yet</h1> <h3 className='flex text-[15px] text-white/70  '>There are no upcoming raid signups for your guild. Check back later or ask your raid leader when the next event will be scheduled.</h3>  </div>              : <Content4 signups={signups} 
+       chars={chars}/>
+  }
        
 
     </div>
      </div>
-  </>)}
-  function Content4({filterSignups, filterChars}){
+  </>
+  function Content4({ chars , signups}){
+     const filterChars = chars.map(x => x.name)
+
+const filterSignups = signups.filter(signup =>
+  signup.playerSignups.some(playerSignup =>
+    filterChars.includes(playerSignup.character.name)
+  )
+)
     return (
-     <div className='grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 2xl:grid-cols-1  gap-5  w-full  p-3 items-start '>
+      <>
+      
+    {  chars.length  < 1 || undefined  ?    <div className='text-white'> TEST </div>     : <div className='grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 2xl:grid-cols-1  gap-5  w-full  p-3 items-start '>
       
       { 
-      filterSignups.map( (x) =>  {const  e = x.playerSignups.filter(ps => filterChars.includes(ps.character.name))
-  .map(ps => ps.character.name).join(' / ')
+
+    filterSignups < 1 ?  <div className='flex text-white/70 bg-[gray]/40 items-center justify-center rounded-xl w-[50%] mx-auto h-[100%] p-3 m-4'>  Visit upcoming raids and Signup 😉 </div>    :  filterSignups.map( (x) =>  {x.playerSignups.filter(ps => filterChars.includes(ps.character.name))
+  .map(ps => ps.character.name).join("|-|")
   const emoji = x.playerSignups.filter( ps=> filterChars.includes(ps.character.name)).map(ps=> ps.character.spec)
   
   
@@ -175,14 +180,17 @@ const filterSignups = signups.filter(signup =>
         <div className='flex flex-col sm:flex-row m-3 w-full p-2 sm:justify-between sm:gap-2'>
           <h1 className='flex text-white text-lg justify-center  items-center'>{x.title}</h1>
           <div className='flex items-center text-white text-sm gap-2 justify-center flex-row sm:flex-col'> {x.date} </div>
-          <div className='flex justify-center  sm:grid sm:grid-col-1  text-white items-center flex-col text-sm gap-1'> Signed as: <h3 className='text-[#8B5CF6] flex flex-col'>{e}</h3> <div className='flex flex-row xl:grid grid-cols-11 '>  {emoji.map( x => <img src={SPEC_EMOJIS[x]} alt='Calendar' className='  w-10 lg:w-10  h-10 lg:h-8 lg:h-auto' /> )}</div>  </div>
+          <div className='grid justify-center grid-cols-1  sm:grid sm:grid-cols-auto text-white items-center flex-col text-sm gap-1'> Signed as:  <div className="grid  grid-cols-7 gap-1 sm:grid-cols-13">  {emoji.map( x =>     <img src={SPEC_EMOJIS[x]} alt='Calendar' className='    lg:w-10   lg:h-8 lg:h-auto' /> )}</div>  </div>
+
         </div>
+        
         <div> <button className='text-[#03fc07] p-2'>ACTIVE</button></div>
       </div>
      ) })} 
-      </div>
-
+      </div>}
+ </>
 )
   }
+}
 
   export default MySignups

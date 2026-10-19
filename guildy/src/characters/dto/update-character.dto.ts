@@ -8,7 +8,7 @@ export class UpdateCharacterDto extends PartialType(CreateCharacterDto) {
 }
 export class updateSpec{
   dscordId: string;
-  guuildId : string;
+  guildId : string;
   name : string;
   spec : Spec;
 }

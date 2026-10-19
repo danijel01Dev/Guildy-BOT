@@ -13,18 +13,43 @@ import { PrismaModule } from './prisma/prisma.module';
 import { PrismaService } from './prisma/prisma.service';
 import { SignupModule } from './signup/signup.module';
 import { AuthModule } from './auth/auth.module';
-
+import { ScheduleModule } from '@nestjs/schedule';
+import {CacheModule} from '@nestjs/cache-manager'
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { createKeyv}  from '@keyv/redis'
 @Module({
-  imports: [
-    ConfigModule.forRoot({
+  imports: [ ConfigModule.forRoot({
       isGlobal: true,
     }),
+    CacheModule.registerAsync({
+  isGlobal: true,
+  useFactory: async () => ({
+    stores: [
+      createKeyv(
+        `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`,
+      ),
+    ],
+    ttl: 60_000,
+  }),
+}),
+   ThrottlerModule.forRoot({
+    throttlers : [{
+      ttl : 6000 ,
+      limit : 10,
+    }]
+    
+  })  ,
+    ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
 
     NecordModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         token: config.get<string>('DISCORD_TOKEN')!,
-        intents: [IntentsBitField.Flags.Guilds],
+        intents: [IntentsBitField.Flags.Guilds, 
+          IntentsBitField.Flags.GuildMembers
+        ],
       }),
     }),
 
@@ -35,7 +60,7 @@ import { AuthModule } from './auth/auth.module';
     SignupModule,
     AuthModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController ],
   providers: [AppService, PrismaService, AppUpdateService],
 })
 export class AppModule {}
