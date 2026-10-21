@@ -1028,7 +1028,7 @@ for (const player of signup.playerSignups) {
         value: '\u200B',
       },{
       name: '🌐 Web',
-      value: '[Sign Up Here](http://localhost)',
+      value: '[Sign Up Here](https://guildy.uk/)',
       inline: false,
     },
     );
