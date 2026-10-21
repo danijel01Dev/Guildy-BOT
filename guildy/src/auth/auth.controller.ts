@@ -36,7 +36,7 @@ async discordCallback( @Query('code') code : string ,
     sameSite: 'lax',
   });
 
-  return res.redirect('http://localhost/upcoming-raids')
+  return res.redirect('https://guildy.uk/upcoming-raids')
 }
 
 
