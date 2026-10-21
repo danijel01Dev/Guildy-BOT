@@ -22,16 +22,17 @@ import { createKeyv}  from '@keyv/redis'
   imports: [ ConfigModule.forRoot({
       isGlobal: true,
     }),
-    CacheModule.registerAsync({
+   CacheModule.registerAsync({
   isGlobal: true,
   useFactory: async () => ({
     stores: [
       createKeyv(
-        `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || 6379}`,
+        process.env.REDIS_URL || 'redis://redis:6379',
       ),
     ],
     ttl: 60_000,
   }),
+
 }),
    ThrottlerModule.forRoot({
     throttlers : [{
