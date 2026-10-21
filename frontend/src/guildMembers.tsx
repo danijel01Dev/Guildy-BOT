@@ -176,19 +176,7 @@ function GuildMembers({selectedGuild , hamburger , setHamburger}){
   const [search , setSearch] = useState('')
   const [newMembers, setNewMembers] = useState([])
  if(search.length < 1 && newMembers.length > 1){ setNewMembers([])}
-  /*async function getGuildMembers(guildId : string) {
-     const  response = await axios.post('http://localhost:3060/characters/guild-members' , {
-      body : guildId
-     },{
-      withCredentials : true,
-     })
-     setGuildMembers(response.data.member)
-  }
-  useEffect(()=> {   if (!selectedGuild) return;
-
-  getGuildMembers(selectedGuild);}, [selectedGuild])
-
-  */
+  
  async function findChar(){
    try{const response = await api.post('/characters/list',{
     name : search,

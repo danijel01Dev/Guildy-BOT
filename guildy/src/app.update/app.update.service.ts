@@ -72,6 +72,7 @@ const embed = new EmbedBuilder()
       value: String(data.leader || 'Not specified'),
       inline: true,
     },
+   
   );
 
 const chunkSize = 5;
@@ -94,8 +95,14 @@ embed.setTimestamp();
     this.logger.warn(`Channel ${data.channelId} is not a text channel.`);
     return;
   }
-
-  await channel.send({ embeds: [embed] });
+await channel.send({
+  content: '@everyone',
+  embeds: [embed],
+  allowedMentions: {
+    parse: ['everyone'],
+  },
+});
+  
 }
 ////
 ///
@@ -1019,7 +1026,11 @@ for (const player of signup.playerSignups) {
       {
         name: '━━━━━━━━━━━━━━━━━━',
         value: '\u200B',
-      },
+      },{
+      name: '🌐 Web',
+      value: '[Sign Up Here](http://localhost)',
+      inline: false,
+    },
     );
 
   const classOrder = [

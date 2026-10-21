@@ -116,7 +116,7 @@ async announceRaid(@Body() Body : any){
     date : Body.date,
     leader : Body.leader,
     channelId : Body.channelId,
-    roster : Body.roster
+    roster : rosterNew
   })
    console.log(result)
    

@@ -57,4 +57,27 @@ pids
 # Diagnostic reports
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
+
+# All environment files
+.env
+.env.*
+!.env.example
+
+# Dependencies and builds
+node_modules/
+dist/
+build/
+
+# Docker local data
+postgres_data/
+redis_data/
+
+# Private keys and secrets
+*.pem
+*.key
+
+# Logs
+*.log
+logs/
+
 /generated/prisma
