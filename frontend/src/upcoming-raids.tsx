@@ -252,7 +252,7 @@ const [optionStatus , setOptionStatus] = useState("ACTIVE")
   // ====  get Guild members and set role ====//
  async function getRanks() {
   try {
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    
 
     const response = await api.post('/characters/get/ranks', {
       discordGuildId: selectedGuild
