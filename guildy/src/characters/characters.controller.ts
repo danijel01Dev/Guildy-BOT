@@ -106,7 +106,7 @@ async getDiscordRanks(
   @Body('discordGuildId', ) guildId : string
 ){
   
-  return await this.charactersService.getRanks(req.discordId,guildId)
+  return await this.charactersService.getRanks(req.user.discordId,guildId)
 }
 
 @UseGuards(JwtAuthGuard)

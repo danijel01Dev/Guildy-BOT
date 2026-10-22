@@ -259,6 +259,9 @@ function CharactersDiv({selectedGuild , hamburger , setHamburger, newChars, setN
   const [charName , setCharName] = useState('')
   const [chooseSpecModal , setChooseSpecModal]= useState(false)
   
+
+
+  
   const [search , setSearch] = useState('')
 async   function getChars (){
  try{
