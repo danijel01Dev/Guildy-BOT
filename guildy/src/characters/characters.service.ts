@@ -393,24 +393,35 @@ export class CharactersService {
 
   return guildMember.chars;
 }
+
 async getRanks(discordId: string, guildId: string) {
+  console.log('discordId:', discordId);
+  console.log('guildId:', guildId);
+
+  const user = await this.db.user.findUnique({
+    where: { discordId },
+  });
+
+  const guild = await this.db.guild.findUnique({
+    where: { discordGuildId: guildId },
+  });
+
+  console.log('User found:', !!user);
+  console.log('Guild found:', !!guild);
+
   const guildMember = await this.db.guildMember.findFirst({
     where: {
-      user: {
-        discordId,
-      },
-      guild: {
-        discordGuildId: guildId,
-      },
+      user: { discordId },
+      guild: { discordGuildId: guildId },
     },
     include: {
       chars: {
-        orderBy: {
-          isMain: 'desc',
-        },
+        orderBy: { isMain: 'desc' },
       },
     },
   });
+
+  console.log('Guild member found:', !!guildMember);
 
   if (!guildMember) {
     throw new NotFoundException(
@@ -420,6 +431,7 @@ async getRanks(discordId: string, guildId: string) {
 
   return guildMember;
 }
+
  async getGuilds(discordId : string) {
     const user = await this.db.user.findUnique({
       where : {discordId},
