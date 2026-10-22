@@ -6,6 +6,7 @@ import {
   Client,
   EmbedBuilder,
   ModalBuilder,
+  PermissionsBitField,
   StringSelectMenuBuilder,
   TextChannel,
   TextInputBuilder,
@@ -235,6 +236,11 @@ await channel.send({
       return;
     }
   try{
+     const rank = interaction.memberPermissions?.has(
+  PermissionsBitField.Flags.Administrator,
+)
+  ? 'OFFICER'
+  : 'MEMBER';
       await this.char.create(
         interaction.user.username,
       interaction.user.avatar,
@@ -244,7 +250,7 @@ await channel.send({
         slug: characterName,
         isMain: false,
         spec,
-        rank: Rank.MEMBER,
+        rank: rank ,
         guildName: interaction.guild?.name ?? 'Unknown Guild',
       },
     );
@@ -1098,7 +1104,7 @@ embed.addFields(
 async onGuildMemberUpdate(
   @necord.Context() [oldMember , newMember] : necord.ContextOf<'guildMemberUpdate'>,){
   try{
-     console.log('🔥 EVENT');
+    
     if(oldMember.roles.cache.equals(newMember.roles.cache)){
       return
     }
@@ -1106,7 +1112,7 @@ const rank = newMember.permissions.has('Administrator')
     ? 'OFFICER'
     : 'MEMBER';
 
-    console.log(rank)
+    
     await this.char.updateRole(newMember.user.id, rank, newMember.guild.id)}
     catch(err){
       
