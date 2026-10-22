@@ -267,7 +267,7 @@ const [optionStatus , setOptionStatus] = useState("ACTIVE")
   }
 }
 
- useEffect(() => {
+ useEffect(() => { if(!selectedGuild){return}
   getRanks().catch(err => {
     console.error('Unhandled getRanks error:', err);
   });
