@@ -261,7 +261,7 @@ function CharactersDiv({selectedGuild , hamburger , setHamburger, newChars, setN
   
 
 
-  
+
   const [search , setSearch] = useState('')
 async   function getChars (){
  try{
@@ -277,7 +277,7 @@ async   function getChars (){
    
    } 
     catch(err){
-       console.log(err)
+       console.error(err)
        if( err.status === 404) toast.error('No chars registered ')
     }  }
 
@@ -298,7 +298,7 @@ try{
     toast.success('Sucessfully deleted!')
  } 
 catch(err){
-  console.log(err)
+  console.error(err)
   if(err.status  === 400) { toast.error(" You can't remove your main character")}
   toast.error('Something went wrong.')
 
@@ -324,7 +324,7 @@ catch(err){
     toast.success("Successfully updated!")
     }
   catch(err){
-    console.log(err)
+    console.error(err)
     toast.error('Something went wrong.')
   }}
 
@@ -343,7 +343,7 @@ catch(err){
      toast.success('Character registered successfully!')
      }
     catch(err){
-      console.log(err)
+      console.error(err)
       toast.error('Something went wrong.')
     } }
     

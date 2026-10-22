@@ -189,7 +189,7 @@ function GuildMembers({selectedGuild , hamburger , setHamburger}){
    
   }
   catch(err){
-    console.log(err)
+    console.error(err)
     toast.error('Invalid GuildMember Name')
   }
  }

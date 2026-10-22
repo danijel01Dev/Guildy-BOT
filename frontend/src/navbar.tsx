@@ -49,7 +49,7 @@ const avatarUrl = userInfo?.avatar
    window.location.href = "/"
   }
   catch(err){
-    console.log(err)
+    console.error(err)
     toast.success("failed to logout")
 
   }

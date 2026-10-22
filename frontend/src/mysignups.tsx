@@ -128,7 +128,7 @@ async   function getChars (){
     
     setChars(response.data)  }
   catch(err){
-    console.log(err)
+    console.error(err)
   }  }
 
     useEffect(()=> {getChars()}, [])

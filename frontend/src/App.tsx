@@ -36,7 +36,7 @@ function App() {
     setGuild(mappedGuild);
     
   } catch (error) {
-    console.log('Failed to fetch guilds:', error);
+    console.error('Failed to fetch guilds:', error);
   }
   } 
  useEffect(()=> { findGuild() },[])

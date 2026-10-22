@@ -262,12 +262,16 @@ const [optionStatus , setOptionStatus] = useState("ACTIVE")
 
     setRank(response.data.rank);
   } catch (err) {
-    console.log(err);
+    console.error(err);
     toast.error("Failed to get rank");
   }
 }
 
-  useEffect(() => { getRanks()}, [selectedGuild])
+ useEffect(() => {
+  getRanks().catch(err => {
+    console.error('Unhandled getRanks error:', err);
+  });
+}, [selectedGuild]);
 
 
 
@@ -292,7 +296,7 @@ const [optionStatus , setOptionStatus] = useState("ACTIVE")
     toast.success("Signup successfull!")
    } 
   catch(err){
-    console.log(err)
+    console.error(err)
     toast.error("Something went wrong.")
   }}
     
@@ -358,7 +362,7 @@ async function callSignups(e : string){
     getSignups(selectedGuild)
     toast.success("Status change successfully!")
     } catch(err){
-      console.log(err)
+      console.error(err)
       toast.error("Something went wrong.")
     }}
 

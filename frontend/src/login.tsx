@@ -32,7 +32,7 @@ const [data , setData] = useState<Data | null>(null)
    try{ const response = await api.get('/signup/landing')
     setData(response.data)
    } catch(err){
-    console.log(err)
+    console.error(err)
     toast.error("failed to fetch dashboard info")
    }}
 

@@ -240,7 +240,7 @@ const SPEC_EMOJIS: Record<Spec, string> = {
     setSignup(response.data.playerSignups)
     setWholeSignuo(response.data)
    } catch(err){
-    console.log(err)
+    console.error(err)
     toast.error("something went wrong!")
    }}
  useEffect( ()=> { getSignups()}, [raidId])
@@ -283,7 +283,7 @@ const SPEC_EMOJIS: Record<Spec, string> = {
    window.location.href= "/upcoming-raids"
   toast.success("Signup deleted successfully!")}
    catch(err){
-    console.log(err)
+    console.error(err)
     toast.error("failed to delete signup , try again!")
    }
   }
@@ -300,7 +300,7 @@ const SPEC_EMOJIS: Record<Spec, string> = {
   },{withCredentials:true})
     toast.success("Roster Announced successfully!")}
   catch(err){
-    console.log(err)
+    console.error(err)
     toast.error('Failed to Announce roster.')
   }
 }
