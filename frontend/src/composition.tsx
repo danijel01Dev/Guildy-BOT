@@ -371,10 +371,9 @@ function Signup({signup, signedUp , addSignup , removeSignup,  newSignup, setNew
   }
   async function filterChars(e : string) {
     setSearch(e)
-    console.log(signup)
+    
     const filterChars = signup.filter(x=> x.character.name.toLowerCase().includes(e.toLowerCase()))
-    console.log(filterChars)
-    console.log(search)
+    
     setNewSignup(filterChars)
   }
  

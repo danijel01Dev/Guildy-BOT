@@ -250,17 +250,22 @@ const [optionStatus , setOptionStatus] = useState("ACTIVE")
     useEffect(()=> {getChars()}, [])
   
   // ====  get Guild members and set role ====//
-  async function getRanks(){
-   try{ const response = await api.post('/characters/get/ranks',{
-      discordGuildId : selectedGuild
-    }, {withCredentials : true})
-  
-    setRank(response.data.rank)
-  }catch(err){
-    console.log(err)
-    toast.error("failed to get rank")
+ async function getRanks() {
+  try {
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
-  }}
+    const response = await api.post('/characters/get/ranks', {
+      discordGuildId: selectedGuild
+    }, {
+      withCredentials: true
+    });
+
+    setRank(response.data.rank);
+  } catch (err) {
+    console.log(err);
+    toast.error("Failed to get rank");
+  }
+}
 
   useEffect(() => { getRanks()}, [selectedGuild])
 

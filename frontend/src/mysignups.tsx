@@ -118,7 +118,7 @@ function MySignups({  selectedGuild, hamburger , setHamburger }){
 
 async   function getChars (){
  
-    const response =  await api.post('/characters/by/user',{
+    try{const response =  await api.post('/characters/by/user',{
       
         discordGuildId : selectedGuild
       },
@@ -126,10 +126,14 @@ async   function getChars (){
         withCredentials : true,
     }  )
     
-    setChars(response.data)    }
+    setChars(response.data)  }
+  catch(err){
+    console.log(err)
+  }  }
 
     useEffect(()=> {getChars()}, [])
-   console.log(chars)
+   
+
   
    
 
