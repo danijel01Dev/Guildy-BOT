@@ -505,7 +505,17 @@ public async createSignup(
     try{
   
 
+const isAdmin = interaction.memberPermissions?.has(
+  PermissionsBitField.Flags.Administrator,
+);
 
+if (!isAdmin) {
+  await interaction.reply({
+    content: 'Only Discord administrators can create signups.',
+    ephemeral: true,
+  });
+  return;
+}
       const title = new TextInputBuilder()
       .setCustomId('signup-title')
       .setLabel('Signup Title')
