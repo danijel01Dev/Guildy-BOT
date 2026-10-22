@@ -251,17 +251,21 @@ const [optionStatus , setOptionStatus] = useState("ACTIVE")
   
   // ====  get Guild members and set role ====//
   async function getRanks(){
-    const response = await api.post('/characters/get/ranks',{
+   try{ const response = await api.post('/characters/get/ranks',{
       discordGuildId : selectedGuild
     }, {withCredentials : true})
-    console.log(response.data)
+  
     setRank(response.data.rank)
-  }
+  }catch(err){
+    console.log(err)
+    toast.error("failed to get rank")
+
+  }}
 
   useEffect(() => { getRanks()}, [selectedGuild])
 
 
- console.log(rank)
+
 
     //=== SignUp Button  : create new PlayerSignup ===//
  
@@ -343,7 +347,7 @@ async function callSignups(e : string){
       withCredentials: true,
     })
     
-    console.log(filterChars)
+    
     
     setStatusModal(false)
     getSignups(selectedGuild)

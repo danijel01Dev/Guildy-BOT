@@ -271,7 +271,7 @@ async   function getChars (){
     }  )
     
     setChars(response.data) 
-    console.log(response.data)
+   
    } 
     catch(err){
        console.log(err)
@@ -279,7 +279,7 @@ async   function getChars (){
     }  }
 
     useEffect(()=> { setChars([]); setSearch('');  setNewChars([]);   getChars()}, [selectedGuild]  )
-   console.log(chars)
+   
     //== Remove Char ==//
   async   function removeChar(){
 try{

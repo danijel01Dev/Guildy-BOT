@@ -42,8 +42,8 @@ const avatarUrl = userInfo?.avatar
 
 
   async function  logout(){
-   try{ const response = await api.post('/auth/logout',{}, {withCredentials: true})
-   console.log(response)
+   try{ await api.post('/auth/logout',{}, {withCredentials: true})
+   
    toast.success("Logout successfull!")
    setGuild('')
    window.location.href = "/"

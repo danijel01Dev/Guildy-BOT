@@ -185,7 +185,7 @@ function GuildMembers({selectedGuild , hamburger , setHamburger}){
     withCredentials: true,
    })
    setNewMembers(response.data)
-   console.log(response.data)
+   
    
   }
   catch(err){
@@ -198,7 +198,7 @@ function GuildMembers({selectedGuild , hamburger , setHamburger}){
     const response = await api.get(`/characters/${selectedGuild}/members`,{
       params : {page}
     })
-    console.log(response.data)
+   
     setGuildMembers(response.data)
   }
 useEffect(()=> { if (!page) return; 

@@ -13,6 +13,7 @@ import BiSL from './assets/main-icons/dkp-import.png'
 import RaidS from './assets/main-icons/raid-stats.png'
 import api from "./api/api"
 import { useEffect, useState } from 'react'
+import toast from 'react-hot-toast'
 
 interface  Data {
   totalSignups : number,
@@ -28,10 +29,12 @@ function Login(){
 const [data , setData] = useState<Data | null>(null)
 
   async function landingInfo(){
-    const response = await api.get('/signup/landing')
-    console.log(response.data)
+   try{ const response = await api.get('/signup/landing')
     setData(response.data)
-  }
+   } catch(err){
+    console.log(err)
+    toast.error("failed to fetch dashboard info")
+   }}
 
   useEffect(()=> {  landingInfo()}, [])
    async  function  login(){

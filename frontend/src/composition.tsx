@@ -231,7 +231,7 @@ const SPEC_EMOJIS: Record<Spec, string> = {
   const [selectedChannel , setSelectedChannel] = useState('')
  const {raidId } = useParams()
   async function getSignups() {
-    const response = await api.post('/signup/find', {
+   try{ const response = await api.post('/signup/find', {
        raidId  : Number(raidId)
     }, {
       withCredentials: true,
@@ -239,9 +239,12 @@ const SPEC_EMOJIS: Record<Spec, string> = {
     
     setSignup(response.data.playerSignups)
     setWholeSignuo(response.data)
- }
+   } catch(err){
+    console.log(err)
+    toast.error("something went wrong!")
+   }}
  useEffect( ()=> { getSignups()}, [raidId])
-  console.log(wholeSignup)
+  
 
 
   function addSignup(signupObj : any ) {
@@ -262,7 +265,7 @@ const SPEC_EMOJIS: Record<Spec, string> = {
  async  function getChannels(){
     const response = await api.get(`/signup/guilds/${selectedGuild}/channels`,{withCredentials:true})
 
-    console.log(response.data)
+   
     setChannels(response.data)
   }
 
@@ -272,17 +275,19 @@ const SPEC_EMOJIS: Record<Spec, string> = {
   
 
  async  function removeSignupButton(){
-     await  api.post('/signup/delete',{
+   try{  await  api.post('/signup/delete',{
       signupId : Number(raidId)
      },{
       withCredentials: true,
      })
    window.location.href= "/upcoming-raids"
+  toast.success("Signup deleted successfully!")}
+   catch(err){
+    console.log(err)
+    toast.error("failed to delete signup , try again!")
+   }
   }
-  console.log(signup)
-  console.log(wholeSignup)
-  console.log(selectedChannel)
-  console.log(signedUp, " TEST")
+  
   async function sendRoster(){
   try{  
     
