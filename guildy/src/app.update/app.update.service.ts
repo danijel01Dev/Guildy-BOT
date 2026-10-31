@@ -20,6 +20,17 @@ import { CreateSignupDto } from './createSignup.dto';
 import { SignupService } from 'src/signup/signup.service';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { group } from 'console';
+import { parseCharacters } from './wow-char-parser';
+type CharacterRegistrationResult = {
+  name: string;
+  spec: string;
+  status:
+    | 'created'
+    | 'already_exists'
+    | 'invalid_name'
+    | 'invalid_spec'
+    | 'error';
+};
 type SignupAnnouncement = {
   title: string;
   date: string;
@@ -270,6 +281,139 @@ await channel.send({
     }
   }
   }
+
+
+
+@necord.SlashCommand({
+  name: 'register-chars',
+  description: 'register characters',
+})
+@necord.StringOption({
+  name: 'text',
+  description: 'Paste your character list',
+  required: true,
+})
+async registerChars(
+  @necord.Context() [interaction]: necord.SlashCommandContext,
+  @necord.Options() options: { text: string },
+) {
+  const rawText = options.text;
+  const result = parseCharacters(rawText);
+
+  if (!interaction.guildId) {
+    await interaction.reply({
+      content: 'Character registration must be done in a server.',
+      ephemeral: true,
+    });
+    return;
+  }
+
+  const registrationResults: CharacterRegistrationResult[] = [];
+
+  const SPEC_KEYS: Record<string, Spec> = Object.fromEntries(
+    Object.entries(SPEC_LABELS).map(([key, label]) => [
+      label,
+      key as Spec,
+    ]),
+  );
+
+  const rank = interaction.memberPermissions?.has(
+    PermissionsBitField.Flags.Administrator,
+  )
+    ? 'OFFICER'
+    : 'MEMBER';
+
+  for (const char of result.characters) {
+    try {
+      // Validate spec
+      const spec = SPEC_KEYS[char.spec];
+
+      if (!spec) {
+        registrationResults.push({
+          name: char.name,
+          spec: char.spec,
+          status: 'invalid_spec',
+        });
+        continue;
+      }
+
+  
+      await this.char.create(
+        interaction.user.username,
+        interaction.user.avatar,
+        interaction.user.id,
+        interaction.guildId,
+        {
+          slug: char.name,
+          isMain: false,
+          spec,
+          rank,
+          guildName: interaction.guild?.name ?? 'Unknown Guild',
+        },
+      );
+
+      registrationResults.push({
+        name: char.name,
+        spec: char.spec,
+        status: 'created',
+      });
+    } catch (err) {
+      if (err instanceof ConflictException) {
+        registrationResults.push({
+          name: char.name,
+          spec: char.spec,
+          status: 'already_exists',
+        });
+      } else if (err instanceof BadRequestException) {
+        registrationResults.push({
+          name: char.name,
+          spec: char.spec,
+          status: 'invalid_name',
+        });
+      } else {
+        registrationResults.push({
+          name: char.name,
+          spec: char.spec,
+          status: 'error',
+        });
+      }
+    }
+  }
+
+  const statusMap: Record<
+    CharacterRegistrationResult['status'],
+    string
+  > = {
+    created: '✅ Created',
+    already_exists: '⚠️ Already exists',
+    invalid_name: '❌ Invalid character name',
+    invalid_spec: '❌ Invalid specialization',
+    error: '❌ Unknown error',
+  };
+
+  const created = registrationResults.filter(
+    (char) => char.status === 'created',
+  ).length;
+
+  const failed = registrationResults.length - created;
+
+  const response = [
+    '**Character registration completed!**',
+    '',
+    `✅ Created: ${created}`,
+    `❌ Failed: ${failed}`,
+    '',
+    ...registrationResults.map(
+      (char) =>
+        `**${char.name}** (${char.spec}) — ${statusMap[char.status]}`,
+    ),
+  ].join('\n');
+
+  await interaction.reply({
+    content: response,
+    ephemeral: true,
+  });
+}
   //
   //
   //

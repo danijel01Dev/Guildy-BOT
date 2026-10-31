@@ -42,6 +42,8 @@ services:
       retries: 10
     restart: unless-stopped
 
+  
+
   db:
     image: postgres:17-alpine
     environment:
@@ -60,3 +62,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  ollama_data:
