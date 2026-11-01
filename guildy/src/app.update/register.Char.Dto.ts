@@ -26,3 +26,12 @@ export class deleteChar {
   })
   name: string;
 }
+
+export class registerChars {
+  @StringOption({
+  name: 'char list',
+  description : 'Register Character list',
+  required: true,
+})
+list : string;
+}

@@ -15,7 +15,7 @@ import {
 import * as necord from 'necord';
 import { Rank, Spec, Status } from 'generated/prisma/enums';
 import { CharactersService } from 'src/characters/characters.service';
-import { deleteChar, findCharName } from './register.Char.Dto';
+import { deleteChar, findCharName, registerChars } from './register.Char.Dto';
 import { CreateSignupDto } from './createSignup.dto';
 import { SignupService } from 'src/signup/signup.service';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
@@ -288,16 +288,11 @@ await channel.send({
   name: 'register-chars',
   description: 'register characters',
 })
-@necord.StringOption({
-  name: 'text',
-  description: 'Paste your character list',
-  required: true,
-})
 async registerChars(
   @necord.Context() [interaction]: necord.SlashCommandContext,
-  @necord.Options() options: { text: string },
+  @necord.Options() options: registerChars,
 ) {
-  const rawText = options.text;
+  const rawText = options.list;
   const result = parseCharacters(rawText);
 
   if (!interaction.guildId) {
@@ -325,7 +320,6 @@ async registerChars(
 
   for (const char of result.characters) {
     try {
-      // Validate spec
       const spec = SPEC_KEYS[char.spec];
 
       if (!spec) {
