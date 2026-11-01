@@ -29,7 +29,7 @@ export class deleteChar {
 
 export class registerChars {
   @StringOption({
-  name: 'char list',
+  name: 'register-chars',
   description : 'Register Character list',
   required: true,
 })
