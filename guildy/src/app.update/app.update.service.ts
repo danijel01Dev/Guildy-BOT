@@ -841,9 +841,12 @@ await interaction.reply({
     signup.discordMessageId!,
   );
 
-  await message.edit({
-    embeds: [this.buildSignupEmbed(signup)],
-  });
+  const { embed, logo } =  await this.buildSignupEmbed(signup);
+
+await message.edit({
+  embeds: [embed],
+  files: [logo],
+});
   
   await interaction.reply({
     content: 'Absence status updated successfully.',
@@ -915,9 +918,12 @@ await interaction.reply({
     signup.discordMessageId!,
   );
 
-  await message.edit({
-    embeds: [this.buildSignupEmbed(signup)],
-  });
+   const { embed, logo } =  await this.buildSignupEmbed(signup);
+
+await message.edit({
+  embeds: [embed],
+  files: [logo],
+});
   
   await interaction.reply({
     content: ' Bench status updated successfully.',
@@ -980,9 +986,12 @@ await interaction.reply({
     signup.discordMessageId!,
   );
 
-  await message.edit({
-    embeds: [this.buildSignupEmbed(signup)],
-  });
+   const { embed, logo } =  await this.buildSignupEmbed(signup);
+
+await message.edit({
+  embeds: [embed],
+  files: [logo],
+});
   
   await interaction.reply({
     content: ' Tentative status updated successfully.',
@@ -1450,9 +1459,12 @@ public async signupSubmit(
           updatedSignup.discordMessageId,
         );
 
-        await message.edit({
-          embeds: [this.buildSignupEmbed(updatedSignup)],
-        });
+       const { embed, logo } =  await this.buildSignupEmbed(updatedSignup);
+
+await message.edit({
+  embeds: [embed],
+  files: [logo],
+});
       } catch (err) {
         embedUpdated = false;
         console.error('Signup embed update error:', err);
@@ -1544,7 +1556,7 @@ public async signupCancel(
 
 
  
-private buildSignupEmbed(signup: any) {
+private  async buildSignupEmbed(signup: any) {
   const players = signup.playerSignups.filter(
     (p: any) => p.character,
   );
@@ -1613,19 +1625,26 @@ private buildSignupEmbed(signup: any) {
 
     return `${output}\n...and ${remaining} more`;
   };
-   const logo = new AttachmentBuilder(
-  path.join(process.cwd(), 'logo', 'guildy.png'),
-  { name: 'guildy.png' },
+   const logoPath = path.resolve(
+  process.cwd(),
+  'src',
+  'app.update',
+  'logo',
+  'guildy.png',
 );
+
+const logo = new AttachmentBuilder(logoPath, {
+  name: 'guildy.png',
+});
   const embed = new EmbedBuilder()
     .setThumbnail('attachment://guildy.png')
     .setColor(0x4f8ef7)
-    .setTitle(`❄️ ${signup.title}`)
+    .setTitle(`⚔️ ${signup.title}`)
     .setDescription(
       [
-        signup.note ? `📝 ${signup.note}` : '',
+        signup.note ? `📜 ${signup.note}` : '',
         '',
-        '[🌐 Open Guildy Signup](https://guildy.uk/)',
+        '[🔗 Open Guildy Signup](https://guildy.uk/)',
       ]
         .filter(Boolean)
         .join('\n'),
@@ -1710,7 +1729,10 @@ private buildSignupEmbed(signup: any) {
     })
     .setTimestamp();
 
-  return embed;
+
+
+    
+ return {embed , logo}
 }
 
 
