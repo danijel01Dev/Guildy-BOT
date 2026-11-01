@@ -35,3 +35,6 @@ export class registerChars {
 })
 list : string;
 }
+
+
+

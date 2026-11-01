@@ -632,6 +632,7 @@ public async pickSpec(
 //
 //
 
+
 @necord.SlashCommand({
   name : 'create-signup',
   description : 'Create Signup'
@@ -1010,98 +1011,534 @@ await interaction.reply({
  //
  //
  //
-     @necord.Button('signup-join/:signupId')
-public async signupJoin(
-  @necord.Context() [interaction]: necord.ButtonContext,
-) {try{
-  const signupId = interaction.customId.split('/')[1];
 
-  const chars = await this.char.findUserCharacters(
-    interaction.user.id,
-    interaction.guildId!,
+
+private signupSelections = new Map<
+  string,
+  {
+    selectedIds: number[];
+    page: number;
+  }
+>();
+
+private getSignupSelectionKey(
+  guildId: string,
+  userId: string,
+  signupId: number,
+): string {
+  return `${guildId}:${userId}:${signupId}`;
+}
+
+// ==========================================
+// BUILD CHARACTER SELECT MENU
+// ==========================================
+
+private buildCharacterSelection(
+  signupId: number,
+  chars: any[],
+  state: { selectedIds: number[]; page: number },
+) {
+  const PAGE_SIZE = 25;
+  const totalPages = Math.ceil(chars.length / PAGE_SIZE);
+
+  const pageChars = chars.slice(
+    state.page * PAGE_SIZE,
+    (state.page + 1) * PAGE_SIZE,
   );
-  
-  if(!chars || chars.length === 0){ throw new NotFoundException('You dont have registered chars  ')}
+
+  const selected = new Set(state.selectedIds);
 
   const select = new StringSelectMenuBuilder()
-    .setCustomId(`signup-character/${signupId}`)
-    .setPlaceholder('Choose your character')
+    .setCustomId(`signup-character/${signupId}/${state.page}`)
+    .setPlaceholder('Choose your characters')
+    .setMinValues(0)
+    .setMaxValues(pageChars.length)
     .addOptions(
-      chars.map((char) => ({
+      pageChars.map((char) => ({
         label: char.name,
         description: SPEC_LABELS[char.spec],
         value: String(char.id),
+        default: selected.has(char.id),
       })),
     );
 
-  const row =
-    new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(select);
+  const selectRow =
+    new ActionRowBuilder<StringSelectMenuBuilder>()
+      .addComponents(select);
 
-  await interaction.reply({
-    content: 'Choose your character',
-    components: [row],
-    ephemeral: true,
-  });}
-  catch(err){
-    if(err instanceof NotFoundException){
+  const buttons = new ActionRowBuilder<ButtonBuilder>()
+    .addComponents(
+      new ButtonBuilder()
+        .setCustomId(`signup-page/${signupId}/${state.page - 1}`)
+        .setLabel('Previous')
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(state.page === 0),
+
+      new ButtonBuilder()
+        .setCustomId(`signup-page/${signupId}/${state.page + 1}`)
+        .setLabel('Next')
+        .setStyle(ButtonStyle.Secondary)
+        .setDisabled(state.page >= totalPages - 1),
+
+      new ButtonBuilder()
+        .setCustomId(`signup-submit/${signupId}`)
+        .setLabel(`Submit (${state.selectedIds.length})`)
+        .setStyle(ButtonStyle.Success)
+        .setDisabled(state.selectedIds.length === 0),
+
+      new ButtonBuilder()
+        .setCustomId(`signup-cancel/${signupId}`)
+        .setLabel('Cancel')
+        .setStyle(ButtonStyle.Danger),
+    );
+
+  return {
+    content:
+      `Select your characters (Page ${state.page + 1}/${totalPages})\n` +
+      `Selected: **${state.selectedIds.length}**`,
+    components: [selectRow, buttons],
+  };
+}
+
+// ==========================================
+// INITIAL SIGNUP BUTTON
+// ==========================================
+
+@necord.Button('signup-join/:signupId')
+public async signupJoin(
+  @necord.Context() [interaction]: necord.ButtonContext,
+) {
+  try {
+    const signupId = Number(interaction.customId.split('/')[1]);
+
+    if (!Number.isInteger(signupId) || signupId <= 0) {
+      throw new BadRequestException('Invalid signup.');
+    }
+
+    const chars = await this.char.findUserCharacters(
+      interaction.user.id,
+      interaction.guildId!,
+    );
+
+    if (!chars || chars.length === 0) {
+      throw new NotFoundException(
+        'You do not have registered characters.',
+      );
+    }
+
+    const key = this.getSignupSelectionKey(
+      interaction.guildId!,
+      interaction.user.id,
+      signupId,
+    );
+
+    const state = {
+      selectedIds: [],
+      page: 0,
+    };
+
+    this.signupSelections.set(key, state);
+
+    const menu = this.buildCharacterSelection(
+      signupId,
+      chars,
+      state,
+    );
+
+    await interaction.reply({
+      ...menu,
+      ephemeral: true,
+    });
+  } catch (err) {
+    console.error('Signup join error:', err);
+
+    if (!interaction.replied && !interaction.deferred) {
       await interaction.reply({
-        content : 'You dont have registered chars in this guild ',
+        content:
+          err instanceof NotFoundException
+            ? 'You do not have registered characters in this guild.'
+            : 'Something went wrong. Please try again.',
         ephemeral: true,
-      })
+      });
     }
   }
 }
-@necord.StringSelect('signup-character/:signupId')
+
+// ==========================================
+// CHARACTER MULTI SELECT
+// ==========================================
+
+@necord.StringSelect('signup-character/:signupId/:page')
 public async signupCharacter(
   @necord.Context() [interaction]: necord.StringSelectContext,
 ) {
- try{ const signupId = Number(interaction.customId.split('/')[1]);
-  const characterId = Number(interaction.values[0]);
-  const chars = await this.char.findUserCharacters(
-    interaction.user.id,
-    interaction.guildId!,
-  );
-  if(!chars || chars.length === 0){ throw new NotFoundException('You dont have registered chars  ')}
+  try {
+    const [, signupIdString, pageString] =
+      interaction.customId.split('/');
 
+    const signupId = Number(signupIdString);
+    const page = Number(pageString);
 
- const signup =  await this.signup.createPlayerSignup(signupId, characterId, chars.map((x)=> x.id) );
+    if (
+      !Number.isInteger(signupId) ||
+      !Number.isInteger(page) ||
+      page < 0
+    ) {
+      throw new BadRequestException('Invalid selection.');
+    }
 
+    const key = this.getSignupSelectionKey(
+      interaction.guildId!,
+      interaction.user.id,
+      signupId,
+    );
 
+    const state = this.signupSelections.get(key);
 
-  if (!signup) {
-    throw new NotFoundException('Signup not found.');
-  }
-   
-  const channel = await this.client.channels.fetch(
-    signup.discordChannelId,
-  );
-
-  if (!channel || !channel.isTextBased()) {
-    throw new NotFoundException('Discord channel not found.');
-  }
-
-  const message = await (channel as TextChannel).messages.fetch(
-    signup.discordMessageId!,
-  );
-
-  await message.edit({
-    embeds: [this.buildSignupEmbed(signup)],
-  });
-
-  await interaction.update({
-    content: '✅ Successfully signed up.',
-    components: [],
-  });}
-  catch(err){
-     if(err instanceof ConflictException){
+    if (!state) {
       await interaction.update({
-        content : 'character already signed up ',
-        components : [],
-      })
-      
-     }
+        content: 'Your selection expired. Please start again.',
+        components: [],
+      });
+      return;
+    }
+
+    const chars = await this.char.findUserCharacters(
+      interaction.user.id,
+      interaction.guildId!,
+    );
+
+    const pageChars = chars.slice(page * 25, (page + 1) * 25);
+
+    if (pageChars.length === 0) {
+      throw new BadRequestException('Invalid page.');
+    }
+
+    const pageIds = new Set(
+      pageChars.map((char) => char.id),
+    );
+
+    const selectedOnPage = interaction.values.map(Number);
+
+    if (
+      selectedOnPage.some(
+        (id) => !Number.isSafeInteger(id) || !pageIds.has(id),
+      )
+    ) {
+      throw new BadRequestException('Invalid character selection.');
+    }
+
+    // Keep selections from other pages.
+    const selectedFromOtherPages = state.selectedIds.filter(
+      (id) => !pageIds.has(id),
+    );
+
+    // Replace only current page selections.
+    state.selectedIds = [
+      ...new Set([
+        ...selectedFromOtherPages,
+        ...selectedOnPage,
+      ]),
+    ];
+
+    state.page = page;
+
+    this.signupSelections.set(key, state);
+
+    const menu = this.buildCharacterSelection(
+      signupId,
+      chars,
+      state,
+    );
+
+    await interaction.update(menu);
+  } catch (err) {
+    console.error('Character selection error:', err);
+
+    await interaction.update({
+      content: 'Unable to process your character selection.',
+      components: [],
+    });
   }
 }
+
+// ==========================================
+// PAGINATION
+// ==========================================
+
+@necord.Button('signup-page/:signupId/:page')
+public async signupPage(
+  @necord.Context() [interaction]: necord.ButtonContext,
+) {
+  try {
+    const [, signupIdString, pageString] =
+      interaction.customId.split('/');
+
+    const signupId = Number(signupIdString);
+    const requestedPage = Number(pageString);
+
+    const key = this.getSignupSelectionKey(
+      interaction.guildId!,
+      interaction.user.id,
+      signupId,
+    );
+
+    const state = this.signupSelections.get(key);
+
+    if (!state) {
+      await interaction.update({
+        content: 'Your selection expired. Please start again.',
+        components: [],
+      });
+      return;
+    }
+
+    const chars = await this.char.findUserCharacters(
+      interaction.user.id,
+      interaction.guildId!,
+    );
+
+    const totalPages = Math.ceil(chars.length / 25);
+
+    if (totalPages === 0) {
+      throw new NotFoundException('No registered characters.');
+    }
+
+    state.page = Math.max(
+      0,
+      Math.min(requestedPage, totalPages - 1),
+    );
+
+    this.signupSelections.set(key, state);
+
+    const menu = this.buildCharacterSelection(
+      signupId,
+      chars,
+      state,
+    );
+
+    await interaction.update(menu);
+  } catch (err) {
+    console.error('Pagination error:', err);
+
+    await interaction.update({
+      content: 'Unable to change page.',
+      components: [],
+    });
+  }
+}
+
+// ==========================================
+// SUBMIT SIGNUP
+// ==========================================
+
+@necord.Button('signup-submit/:signupId')
+public async signupSubmit(
+  @necord.Context() [interaction]: necord.ButtonContext,
+) {
+  const signupId = Number(interaction.customId.split('/')[1]);
+
+  const key = this.getSignupSelectionKey(
+    interaction.guildId!,
+    interaction.user.id,
+    signupId,
+  );
+
+  try {
+    const selection = this.signupSelections.get(key);
+
+    if (!selection || selection.selectedIds.length === 0) {
+      await interaction.update({
+        content: 'Your selection expired or is empty. Please start again.',
+        components: [],
+      });
+      return;
+    }
+
+    const characterIds = [...selection.selectedIds];
+
+    // Remove selection to prevent duplicate submission.
+    this.signupSelections.delete(key);
+
+    const chars = await this.char.findUserCharacters(
+      interaction.user.id,
+      interaction.guildId!,
+    );
+
+    const allowedIds = new Set(
+      chars.map((char) => char.id),
+    );
+
+    if (characterIds.some((id) => !allowedIds.has(id))) {
+      await interaction.update({
+        content: 'Invalid character selection.',
+        components: [],
+      });
+      return;
+    }
+
+    // Acknowledge Discord interaction before processing.
+    await interaction.deferUpdate();
+
+    const results: {
+      characterId: number;
+      status: 'created' | 'already_exists' | 'error';
+    }[] = [];
+
+    let updatedSignup: any = null;
+
+    // Process characters one by one using existing service.
+    for (const characterId of characterIds) {
+      try {
+        const signup = await this.signup.createPlayerSignup(
+          signupId,
+          characterId,
+          chars.map((char) => char.id),
+        );
+
+        if (!signup) {
+          results.push({
+            characterId,
+            status: 'error',
+          });
+          continue;
+        }
+
+        updatedSignup = signup;
+
+        results.push({
+          characterId,
+          status: 'created',
+        });
+      } catch (err) {
+        if (err instanceof ConflictException) {
+          results.push({
+            characterId,
+            status: 'already_exists',
+          });
+        } else {
+          console.error(
+            `Signup failed for character ${characterId}:`,
+            err,
+          );
+
+          results.push({
+            characterId,
+            status: 'error',
+          });
+        }
+      }
+    }
+
+    // Update Discord signup embed only once.
+    let embedUpdated = true;
+
+    if (updatedSignup) {
+      try {
+        const channel = await this.client.channels.fetch(
+          updatedSignup.discordChannelId,
+        );
+
+        if (!channel || !channel.isTextBased()) {
+          throw new NotFoundException('Discord channel not found.');
+        }
+
+        const message = await (channel as TextChannel).messages.fetch(
+          updatedSignup.discordMessageId,
+        );
+
+        await message.edit({
+          embeds: [this.buildSignupEmbed(updatedSignup)],
+        });
+      } catch (err) {
+        embedUpdated = false;
+        console.error('Signup embed update error:', err);
+      }
+    }
+
+    const created = results.filter(
+      (result) => result.status === 'created',
+    ).length;
+
+    const alreadyExists = results.filter(
+      (result) => result.status === 'already_exists',
+    ).length;
+
+    const failed = results.filter(
+      (result) => result.status === 'error',
+    ).length;
+
+    const summary = [
+      '**Character signup completed!**',
+      '',
+      `✅ Created: ${created}`,
+      `⚠️ Already signed up: ${alreadyExists}`,
+      `❌ Failed: ${failed}`,
+      '',
+      ...results.map((result) => {
+        const char = chars.find(
+          (item) => item.id === result.characterId,
+        );
+
+        const status = {
+          created: '✅ Created',
+          already_exists: '⚠️ Already signed up',
+          error: '❌ Failed',
+        }[result.status];
+
+        return `**${char?.name ?? result.characterId}** — ${status}`;
+      }),
+      ...(!embedUpdated
+        ? ['', '⚠️ Signup was processed, but the Discord event message could not be updated.']
+        : []),
+    ].join('\n');
+
+    await interaction.editReply({
+      content: summary,
+      components: [],
+    });
+  } catch (err) {
+    console.error('Signup submit error:', err);
+
+    if (interaction.deferred) {
+      await interaction.editReply({
+        content: 'Something went wrong while processing your signup.',
+        components: [],
+      });
+    } else if (!interaction.replied) {
+      await interaction.reply({
+        content: 'Something went wrong. Please try again.',
+        ephemeral: true,
+      });
+    }
+  }
+}
+
+// ==========================================
+// CANCEL SIGNUP
+// ==========================================
+
+@necord.Button('signup-cancel/:signupId')
+public async signupCancel(
+  @necord.Context() [interaction]: necord.ButtonContext,
+) {
+  const signupId = Number(interaction.customId.split('/')[1]);
+
+  const key = this.getSignupSelectionKey(
+    interaction.guildId!,
+    interaction.user.id,
+    signupId,
+  );
+
+  this.signupSelections.delete(key);
+
+  await interaction.update({
+    content: 'Signup cancelled.',
+    components: [],
+  });
+}
+
+
 
   private buildSignupEmbed(signup: any) {
   const uniqueMembers = new Set(
