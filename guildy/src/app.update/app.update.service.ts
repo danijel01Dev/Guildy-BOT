@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   ActionRowBuilder,
+  AttachmentBuilder,
   ButtonBuilder,
   ButtonStyle,
   Client,
@@ -21,6 +22,8 @@ import { SignupService } from 'src/signup/signup.service';
 import { OnEvent, EventEmitter2 } from '@nestjs/event-emitter';
 import { group } from 'console';
 import { parseCharacters } from './wow-char-parser';
+import path from 'path';
+
 type CharacterRegistrationResult = {
   name: string;
   spec: string;
@@ -1540,88 +1543,109 @@ public async signupCancel(
 
 
 
-  private buildSignupEmbed(signup: any) {
+ 
+private buildSignupEmbed(signup: any) {
+  const players = signup.playerSignups.filter(
+    (p: any) => p.character,
+  );
+
   const uniqueMembers = new Set(
-    signup.playerSignups.map(
-      (x: any) => x.character.guildMemberId,
-    ),
+    players.map((p: any) => p.character.guildMemberId),
   );
 
   const grouped = new Map<Spec, string[]>();
-   const   absencePlayer : string[]= [];
-   const    benchPlayer : string[] = [];
-   const tentativePlayer : string [] = [];  
-for (const player of signup.playerSignups) {
-  if(player.status === Status.ABSENCE){
 
-  }
-  if(!player.character){continue}
-  switch(player.status){
-    case Status.ABSENCE: 
-    absencePlayer.push(player.character.name);
-    continue;
-    case Status.BENCH:
-    benchPlayer.push(player.character.name);
-    continue;
-    case Status.TENTATIVE:
-      tentativePlayer.push(player.character.name);
-      continue;
+  const bench: string[] = [];
+  const tentative: string[] = [];
+  const absence: string[] = [];
+
+  for (const player of players) {
+    const name = player.character.name;
+
+    switch (player.status) {
+      case Status.ABSENCE:
+        absence.push(name);
+        continue;
+
+      case Status.BENCH:
+        bench.push(name);
+        continue;
+
+      case Status.TENTATIVE:
+        tentative.push(name);
+        continue;
+
       case Status.ACTIVE:
         break;
-        default : continue;
+
+      default:
+        continue;
+    }
+
+    const spec = player.character.spec;
+
+    if (!grouped.has(spec)) {
+      grouped.set(spec, []);
+    }
+
+    grouped.get(spec)!.push(name);
   }
 
-  const spec = player.character.spec;
-  if (!grouped.has(spec)) {
-    grouped.set(spec, []);
-  }
+  // Keep Discord field values below 1024 characters.
+  const formatList = (names: string[]) => {
+    if (!names.length) return '—';
 
-  grouped.get(spec)!.push(player.character.name);
+    const result = names.join('\n');
 
-  }
+    if (result.length <= 1000) return result;
 
+    let output = '';
+
+    for (const name of names) {
+      if ((output + '\n' + name).length > 970) {
+        break;
+      }
+
+      output += (output ? '\n' : '') + name;
+    }
+
+    const remaining = names.length - output.split('\n').length;
+
+    return `${output}\n...and ${remaining} more`;
+  };
+   const logo = new AttachmentBuilder(
+  path.join(process.cwd(), 'logo', 'guildy.png'),
+  { name: 'guildy.png' },
+);
   const embed = new EmbedBuilder()
+    .setThumbnail('attachment://guildy.png')
     .setColor(0x4f8ef7)
     .setTitle(`❄️ ${signup.title}`)
-    .setDescription(`📝 **${signup.note}**`)
-    .setThumbnail('http://localhost:3060/Lichking2492494.webp'
-      )
+    .setDescription(
+      [
+        signup.note ? `📝 ${signup.note}` : '',
+        '',
+        '[🌐 Open Guildy Signup](https://guildy.uk/)',
+      ]
+        .filter(Boolean)
+        .join('\n'),
+    )
     .addFields(
       {
-        name: '━━━━━━━━━━━━━━━━━━',
-        value: '\u200B',
-      },
-      {
         name: '📅 Raid Date',
-        value: signup.date,
+        value: signup.date || 'TBA',
         inline: true,
-      },
-      {
-        name: '━━━━━━━━━━━━━━━━━━',
-        value: '\u200B',
       },
       {
         name: '👑 Raid Leader',
-        value: signup.leader,
+        value: signup.leader || 'Unknown',
         inline: true,
-      },
-      {
-        name: '━━━━━━━━━━━━━━━━━━',
-        value: '\u200B',
       },
       {
         name: '👥 Signed',
-        value: `${uniqueMembers.size}/40`,
+        value: `**${uniqueMembers.size}/40**`,
         inline: true,
       },
-      {
-        name: '━━━━━━━━━━━━━━━━━━',
-        value: '\u200B',
-      },{
-      name: '🌐 Web',
-      value: '[Sign Up Here](https://guildy.uk/)',
-      inline: false,
-    },
     );
 
   const classOrder = [
@@ -1635,46 +1659,50 @@ for (const player of signup.playerSignups) {
     'SHAMAN',
     'ROGUE',
     'WARLOCK',
-  ];
+  ] as const;
 
+  // Active raid roster
   for (const cls of classOrder) {
-  let value = '\u200B\n';
+    const specs = CLASS_SPECS[cls];
+    const names: string[] = [];
 
-  for (const spec of CLASS_SPECS[cls as keyof typeof CLASS_SPECS]) {
-    const players = grouped.get(spec);
+    for (const spec of specs) {
+      const players = grouped.get(spec);
 
-    if (!players?.length) continue;
+      if (!players?.length) continue;
 
-    for (const player of players) {
-      value += `${SPEC_EMOJIS[spec]} ${player}\n`;
+      for (const player of players) {
+        names.push(`${SPEC_EMOJIS[spec]} ${player}`);
+      }
     }
+
+    if (!names.length) continue;
+
+    embed.addFields({
+      name: `${CLASS_EMOJIS[cls]} ${CLASS_LABELS[cls]}`,
+      value: formatList(names),
+      inline: true,
+    });
   }
 
-  if (value === '\u200B\n') continue;
-
-  embed.addFields({
-    name: `${CLASS_EMOJIS[cls as keyof typeof CLASS_EMOJIS]} ${CLASS_LABELS[cls]}`,
-    value: value.trimEnd(),
-    inline: true,
-  })
-  }
-embed.addFields(
-  {
-    name: '🪑 Bench',
-    value: benchPlayer.length ? benchPlayer.join('\n') : '-',
-    inline: true,
-  },
-  {
-    name: '❔ Tentative',
-    value: tentativePlayer.length ? tentativePlayer.join('\n') : '-',
-    inline: true,
-  },
-  {
-    name: '❌ Absence',
-    value: absencePlayer.length ? absencePlayer.join('\n') : '-',
-    inline: true,
-  },
-);
+  // Additional signup statuses
+  embed.addFields(
+    {
+      name: '🪑 Bench',
+      value: formatList(bench),
+      inline: true,
+    },
+    {
+      name: '❔ Tentative',
+      value: formatList(tentative),
+      inline: true,
+    },
+    {
+      name: '❌ Absence',
+      value: formatList(absence),
+      inline: true,
+    },
+  );
 
   embed
     .setFooter({
@@ -1684,6 +1712,7 @@ embed.addFields(
 
   return embed;
 }
+
 
 @necord.On('guildMemberUpdate')
 async onGuildMemberUpdate(
