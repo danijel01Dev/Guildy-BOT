@@ -1627,6 +1627,7 @@ private  async buildSignupEmbed(signup: any) {
   };
    const logoPath = path.resolve(
   process.cwd(),
+  'dist',
   'src',
   'app.update',
   'logo',
