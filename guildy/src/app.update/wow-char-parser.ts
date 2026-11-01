@@ -141,18 +141,17 @@ if (/(?<![a-z])sp\b/i.test(raw) && isPriest) {
     specs.add("Subtlety Rogue");
   }
 
-  // DEATH KNIGHT
-  if (/\b(bdk|blood)\b/i.test(raw) && isDK) {
-    specs.add("Blood Death Knight");
-  }
+ if (/\b(bdk|blood)\b/i.test(raw) && isDK) {
+  specs.add("Blood DK");
+}
 
-  if (/\b(uh|unh|unholy|udk)\b/i.test(raw)) {
-    specs.add("Unholy Death Knight");
-  }
+if (/\b(uh|unh|unholy|udk)\b/i.test(raw) && isDK) {
+  specs.add("Unholy DK");
+}
 
-  if (/\b(fdk|frost\s*dk|frost\s*death\s*knight)\b/i.test(raw)) {
-    specs.add("Frost Death Knight");
-  }
+if (/\b(fdk|frost\s*dk|frost\s*death\s*knight)\b/i.test(raw) && isDK) {
+  specs.add("Frost DK");
+}
 
   // WARLOCK
   if (/\b(demo|demolock|demonology)\b/i.test(raw)) {
